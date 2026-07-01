@@ -2,7 +2,7 @@
    Cache-first : une fois visitée en Wi-Fi, l'app fonctionne intégralement
    hors-ligne (sur le parcours, sans réseau). */
 
-const CACHE_NAME = "golftracker-mobile-v6";
+const CACHE_NAME = "golftracker-mobile-v7";
 const ASSETS = [
   "./index.html",
   "./style.css",

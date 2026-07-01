@@ -7,7 +7,7 @@
 (function () {
   "use strict";
 
-  var APP_BUILD = "2026-07-02";
+  var APP_BUILD = "2026-07-02b";
 
   var LS_COURSES = "gtm_courses_v1";
   var LS_ROUNDS = "gtm_rounds_v1";
@@ -170,7 +170,7 @@
         '<div class="li-main"><div class="li-title">' + escapeHtml(name) + '</div>' +
         '<div class="li-sub">' + c.num_holes + ' trous · par ' + c.holes.reduce(function (s, h) { return s + h.par; }, 0) + '</div></div>' +
         '<span class="li-chev">›</span>';
-      div.addEventListener("click", function () { openCourseForm(name); });
+      div.addEventListener("click", function () { openCourseForm(name); showScreen("course-form"); });
       el.appendChild(div);
     });
   }
