@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GolfTracker">
+<meta name="theme-color" content="#1b4332">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Golf Tracker · Mobile</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <button class="back-btn" id="btn-back" style="visibility:hidden">← Retour</button>
+    <span class="brand">⛳ Golf<em>Tracker</em> <small>mobile</small></span>
+    <span style="width:60px"></span>
+  </header>
+
+  <main id="app">
+
+    <!-- ============================= ACCUEIL ============================= -->
+    <section id="screen-home" class="screen active">
+      <h1>Mes cartes</h1>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btn-new-round">+ Nouvelle carte</button>
+      </div>
+      <div class="btn-row" style="margin-top:8px">
+        <button class="btn" id="btn-manage-courses">Mes parcours</button>
+        <button class="btn" id="btn-export">Exporter</button>
+      </div>
+
+      <h3>En cours</h3>
+      <div class="card" id="list-draft"><div class="empty"><span class="flag">⛳</span>Aucune carte en cours.</div></div>
+
+      <h3>Prêtes à exporter</h3>
+      <div class="card" id="list-ready"><div class="empty"><span class="flag">📤</span>Aucune carte terminée.</div></div>
+
+      <h3>Déjà exportées</h3>
+      <div class="card" id="list-exported"><div class="empty"><span class="flag">✅</span>—</div></div>
+
+      <p class="footnote">Fonctionne hors-ligne · les données restent sur ce téléphone jusqu'à export.</p>
+    </section>
+
+    <!-- ============================= PARCOURS (liste) ============================= -->
+    <section id="screen-courses" class="screen">
+      <h1>Mes parcours</h1>
+      <label class="field"><span class="lab">Adresse du PC (pour la synchro et uniquement pour ça)</span>
+        <input type="text" id="server-address" placeholder="ex. 192.168.1.20:5000 ou https://golf-tracker.local:5000"></label>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btn-new-course">+ Nouveau parcours</button>
+        <button class="btn" id="btn-sync-courses">🔄 Synchroniser (réseau)</button>
+      </div>
+      <button class="btn" id="btn-import-courses-file" style="margin-top:8px">📁 Importer un fichier JSON</button>
+      <input type="file" id="courses-file-input" accept="application/json" style="display:none">
+      <p class="micro" id="sync-status"></p>
+      <div class="card" id="list-courses" style="margin-top:12px"></div>
+      <p class="micro">Ces parcours servent à préremplir le par (et les notes de stratégie) de
+         chaque trou pendant la saisie. Le rapprochement avec tes parcours de l'appli desktop se
+         fait par le nom — utilise exactement le même nom, ou synchronise directement (nécessite
+         d'être sur le même Wi-Fi que l'ordinateur, l'app elle-même reste utilisable de partout).</p>
+    </section>
+
+    <!-- ============================= PARCOURS (formulaire) ============================= -->
+    <section id="screen-course-form" class="screen">
+      <h1 id="course-form-title">Nouveau parcours</h1>
+      <label class="field"><span class="lab">Nom du parcours</span>
+        <input type="text" id="cf-name" placeholder="Ex. Golf de Maspalomas"></label>
+      <label class="field"><span class="lab">Nombre de trous</span>
+        <div class="seg" id="cf-numholes">
+          <button data-v="18" class="active">18</button>
+          <button data-v="9">9</button>
+        </div>
+      </label>
+      <h3>Par de chaque trou</h3>
+      <div id="cf-holes"></div>
+      <div class="btn-row" style="margin-top:10px">
+        <button class="btn btn-primary" id="btn-save-course">Enregistrer le parcours</button>
+      </div>
+    </section>
+
+    <!-- ============================= NOUVELLE CARTE (setup) ============================= -->
+    <section id="screen-round-setup" class="screen">
+      <h1>Nouvelle carte</h1>
+      <label class="field"><span class="lab">Parcours</span>
+        <select id="rs-course"></select></label>
+
+      <label class="field"><span class="lab">Date</span>
+        <input type="date" id="rs-date"></label>
+
+      <label class="field"><span class="lab">Formule</span>
+        <div class="seg" id="rs-segment">
+          <button data-v="full" class="active">18 trous</button>
+          <button data-v="front">Aller (1–9)</button>
+          <button data-v="back">Retour (10–18)</button>
+        </div>
+      </label>
+
+      <label class="field"><span class="lab">Départs</span>
+        <div class="seg" id="rs-tees">
+          <button data-v="jaunes" class="active">Jaunes</button>
+          <button data-v="blancs">Blancs</button>
+        </div>
+      </label>
+
+      <details class="collapse">
+        <summary>Contexte compétition (facultatif)</summary>
+        <label class="field"><span class="lab">Type</span>
+          <div class="seg" id="rs-type">
+            <button data-v="libre" class="active">Libre</button>
+            <button data-v="competition">Compétition</button>
+            <button data-v="tournoi">Tournoi</button>
+          </div>
+        </label>
+        <label class="field"><span class="lab">Nom de l'épreuve</span>
+          <input type="text" id="rs-compname" placeholder="Grand Prix de…"></label>
+        <label class="field"><span class="lab">Format</span>
+          <select id="rs-format">
+            <option value="medal">Stroke play (medal)</option>
+            <option value="stableford">Stableford</option>
+            <option value="matchplay">Match-play</option>
+            <option value="scramble">Scramble</option>
+          </select></label>
+        <label class="field" style="display:flex;align-items:center;gap:8px">
+          <input type="checkbox" id="rs-official" style="width:20px;height:20px">
+          <span class="lab" style="margin:0">Carte officielle (classement WHS)</span>
+        </label>
+      </details>
+
+      <details class="collapse">
+        <summary>Météo &amp; notes (facultatif)</summary>
+        <button type="button" class="btn btn-sm" id="btn-detect-weather" style="margin-bottom:10px">🌤 Détecter via GPS</button>
+        <p class="micro" id="weather-detect-status"></p>
+        <div class="grid-2">
+          <label class="field"><span class="lab">Météo</span>
+            <input type="text" id="rs-weather" placeholder="Ensoleillé…"></label>
+          <label class="field"><span class="lab">Température</span>
+            <input type="text" id="rs-temp" placeholder="22°C"></label>
+        </div>
+        <label class="field"><span class="lab">Vent</span>
+          <select id="rs-wind">
+            <option value="">—</option>
+            <option value="calme">Calme</option>
+            <option value="leger">Léger (10-20 km/h)</option>
+            <option value="modere">Modéré (20-35 km/h)</option>
+            <option value="fort">Fort (35 km/h+)</option>
+          </select></label>
+        <label class="field"><span class="lab">Notes</span>
+          <textarea id="rs-notes" placeholder="Sensations, swing du jour…"></textarea></label>
+      </details>
+
+      <div class="btn-row" style="margin-top:14px">
+        <button class="btn btn-primary" id="btn-start-round">Commencer la saisie</button>
+      </div>
+    </section>
+
+    <!-- ============================= SAISIE TROU PAR TROU ============================= -->
+    <section id="screen-hole" class="screen">
+      <div class="hole-progress" id="hole-progress"></div>
+
+      <div class="card">
+        <div class="hole-head">
+          <span class="hn" id="h-number">Trou 1</span>
+          <span class="hp" id="h-par">Par 4</span>
+        </div>
+
+        <div id="h-strategy-note" class="strategy-note" style="display:none"></div>
+
+        <span class="lab" style="display:block;margin-bottom:4px;font-size:12.5px;color:var(--ink-soft);font-weight:600">Score</span>
+        <div class="stepper" id="st-score">
+          <button data-d="-1">−</button><span class="val" id="v-score">4</span><button data-d="1">+</button>
+        </div>
+
+        <span class="lab" style="display:block;margin:14px 0 4px;font-size:12.5px;color:var(--ink-soft);font-weight:600">Putts</span>
+        <div class="stepper" id="st-putts">
+          <button data-d="-1">−</button><span class="val" id="v-putts">2</span><button data-d="1">+</button>
+        </div>
+
+        <div id="fairway-block">
+          <span class="lab" style="display:block;margin:14px 0 4px;font-size:12.5px;color:var(--ink-soft);font-weight:600">Fairway</span>
+          <div class="opt-row" id="opt-fairway">
+            <button class="opt-btn" data-v="hit">Touché</button>
+            <button class="opt-btn" data-v="miss">Manqué</button>
+          </div>
+        </div>
+
+        <span class="lab" style="display:block;margin:14px 0 4px;font-size:12.5px;color:var(--ink-soft);font-weight:600">Green en régulation (GIR)</span>
+        <div class="opt-row" id="opt-gir">
+          <button class="opt-btn" data-v="1">Oui</button>
+          <button class="opt-btn" data-v="0">Non</button>
+        </div>
+
+        <span class="lab" style="display:block;margin:14px 0 4px;font-size:12.5px;color:var(--ink-soft);font-weight:600">Pénalités</span>
+        <div class="stepper" id="st-pen">
+          <button data-d="-1">−</button><span class="val" id="v-pen">0</span><button data-d="1">+</button>
+        </div>
+
+        <details class="collapse">
+          <summary>Plus de détails (1er putt, up&amp;down, bunker, club de départ)</summary>
+          <label class="field"><span class="lab">Distance du 1er putt (pieds)</span>
+            <input type="number" inputmode="decimal" id="h-fpd" placeholder="ex. 15"></label>
+
+          <span class="lab" style="display:block;margin-bottom:4px">Up &amp; down (si green manqué)</span>
+          <div class="opt-row" id="opt-updown">
+            <button class="opt-btn" data-v="">Non tenté</button>
+            <button class="opt-btn" data-v="att">Tenté, raté</button>
+            <button class="opt-btn" data-v="ok">Réussi</button>
+          </div>
+
+          <span class="lab" style="display:block;margin:12px 0 4px">Sortie de bunker</span>
+          <div class="opt-row" id="opt-sand">
+            <button class="opt-btn" data-v="">Non tenté</button>
+            <button class="opt-btn" data-v="att">Tenté, raté</button>
+            <button class="opt-btn" data-v="ok">Réussi</button>
+          </div>
+
+          <label class="field" style="margin-top:12px"><span class="lab">Club au départ</span>
+            <select id="h-club"><option value="">—</option></select></label>
+          <label class="field"><span class="lab">Distance du drive (m)</span>
+            <input type="number" inputmode="numeric" id="h-drivedist" placeholder="ex. 210"></label>
+
+          <h3>Log GPS des coups <small style="font-weight:400;color:var(--ink-soft)">(optionnel)</small></h3>
+          <p class="micro">Marque ta position à chaque coup avant de jouer (départ, fairway, rough,
+             bunker…), puis le drapeau une fois sur le green. La distance de chaque coup et le
+             strokes gained (départ/approche/petit jeu) seront calculés automatiquement à l'export —
+             et remplacent le club/distance de départ saisis ci-dessus si un log est présent.</p>
+
+          <div class="list-item" style="padding:10px 0">
+            <div class="li-main">
+              <div class="li-title" id="gps-pin-label">Drapeau non marqué</div>
+              <div class="li-sub" id="gps-pin-sub">Marque-le une fois arrivé sur le green.</div>
+            </div>
+            <button type="button" class="btn btn-sm" id="btn-mark-pin">🚩 Marquer</button>
+          </div>
+
+          <div id="gps-shots-list"></div>
+
+          <div class="grid-2" style="margin-top:8px">
+            <label class="field" style="margin-bottom:0"><span class="lab">Type de coup</span>
+              <select id="gps-lie">
+                <option value="tee">Départ</option>
+                <option value="fairway" selected>Fairway</option>
+                <option value="rough">Rough</option>
+                <option value="sand">Bunker</option>
+                <option value="recovery">Recovery</option>
+              </select></label>
+            <label class="field" style="margin-bottom:0"><span class="lab">Club (optionnel)</span>
+              <select id="gps-club"><option value="">—</option></select></label>
+          </div>
+          <button type="button" class="btn btn-primary" id="btn-mark-shot" style="margin-top:10px">📍 Marquer ce coup</button>
+        </details>
+      </div>
+
+      <div class="hole-nav">
+        <button class="btn" id="btn-prev-hole">← Précédent</button>
+        <button class="btn btn-primary" id="btn-next-hole">Suivant →</button>
+      </div>
+    </section>
+
+  </main>
+
+  <div id="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>
