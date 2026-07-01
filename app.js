@@ -187,7 +187,12 @@
       wrap.appendChild(row);
       row.querySelectorAll(".seg button").forEach(function (btn) {
         btn.addEventListener("click", function () {
-          row.querySelectorAll(".seg button").forEach(function (b) { b.classList.remove("active"); });
+          // Important : on retrouve la ligne du bouton cliqué via closest(), plutôt que de
+          // s'appuyer sur la variable "row" de la boucle englobante — capturée dans ce closure,
+          // elle pointerait toujours vers le DERNIER trou construit (piège classique de portée
+          // "var" dans une boucle), pas vers le trou réellement cliqué.
+          var ownRow = btn.closest(".par-grid-row");
+          ownRow.querySelectorAll(".seg button").forEach(function (b) { b.classList.remove("active"); });
           btn.classList.add("active");
         });
       });
