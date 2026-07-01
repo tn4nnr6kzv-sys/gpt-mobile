@@ -880,5 +880,19 @@
     });
   }
 
+  // Chargement auto d'un fichier de données parcours déposé dans le dépôt (courses-data.json,
+  // à côté de index.html) — mis à jour depuis Réglages → « Télécharger courses-data.json » côté
+  // desktop. Silencieux : si le fichier n'existe pas, ne fait simplement rien. Le service worker
+  // le récupère en priorité réseau (voir sw.js) pour toujours prendre la dernière version dispo,
+  // avec repli sur la version en cache si hors-ligne.
+  (function loadBundledCourses() {
+    fetch("./courses-data.json", { cache: "no-store" }).then(function (r) {
+      if (!r.ok) throw new Error("absent");
+      return r.json();
+    }).then(function (serverCourses) {
+      mergeServerCourses(serverCourses);
+    }).catch(function () { /* pas de bundle déposé, ou hors-ligne sans version en cache — ok */ });
+  })();
+
   renderHome();
 })();
