@@ -7,6 +7,8 @@
 (function () {
   "use strict";
 
+  var APP_BUILD = "2026-07-02";
+
   var LS_COURSES = "gtm_courses_v1";
   var LS_ROUNDS = "gtm_rounds_v1";
 
@@ -928,6 +930,30 @@
       navigator.serviceWorker.register("sw.js").catch(function () {});
     });
   }
+
+  document.getElementById("app-version-footnote").textContent = "Version app : " + APP_BUILD;
+
+  document.getElementById("btn-refresh-app").addEventListener("click", function () {
+    if (!("serviceWorker" in navigator)) { location.reload(); return; }
+    toast("Vérification d'une nouvelle version…");
+    var reloaded = false;
+    var doReload = function () {
+      if (reloaded) return;
+      reloaded = true;
+      location.reload();
+    };
+    // Se déclenche dès qu'une nouvelle version du service worker prend le contrôle de la page
+    // (sw.js appelle déjà skipWaiting()/clients.claim() automatiquement à l'installation).
+    navigator.serviceWorker.addEventListener("controllerchange", doReload);
+    navigator.serviceWorker.getRegistration().then(function (reg) {
+      if (!reg) { doReload(); return; }
+      reg.update().catch(function () {});
+      // Filet de sécurité : si aucun changement de contrôleur ne survient (déjà à jour, ou
+      // navigateur qui ne coopère pas), on recharge quand même après un court délai — au moins
+      // courses-data.json (réseau prioritaire) et l'état de l'app seront rafraîchis.
+      setTimeout(doReload, 1500);
+    }).catch(doReload);
+  });
 
   // Chargement auto d'un fichier de données parcours déposé dans le dépôt (courses-data.json,
   // à côté de index.html) — mis à jour depuis Réglages → « Télécharger courses-data.json » côté
