@@ -261,6 +261,43 @@
       </div>
     </section>
 
+    <!-- ============================= EXPORT ============================= -->
+    <section id="screen-export" class="screen">
+      <h1>Exporter tes cartes</h1>
+      <p class="micro" id="export-intro"></p>
+
+      <div class="card">
+        <h3 style="margin-top:0">Méthode recommandée : copier-coller</h3>
+        <p class="micro">La plus fiable sur iPhone. Copie le texte, puis colle-le directement dans
+           <strong>Réglages → Importer depuis le mobile</strong> sur l'ordinateur (champ « coller le
+           JSON »).</p>
+        <button class="btn btn-primary" id="btn-copy-export">📋 Copier le JSON</button>
+        <p class="micro" id="copy-status"></p>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0">Autres méthodes</h3>
+        <p class="micro">Moins fiables selon les versions d'iOS — à essayer si le copier-coller ne
+           te convient pas.</p>
+        <button class="btn" id="btn-share-export">📤 Partager (Mail, AirDrop…)</button>
+        <button class="btn" id="btn-download-export">⬇️ Télécharger le fichier</button>
+      </div>
+
+      <details class="collapse">
+        <summary>Voir le JSON brut</summary>
+        <textarea id="export-json-text" readonly rows="8"
+          style="width:100%;font-family:ui-monospace,monospace;font-size:11.5px;padding:8px;
+          border-radius:8px;border:1px solid var(--line-strong);margin-top:6px"></textarea>
+      </details>
+
+      <div class="btn-row" style="margin-top:16px">
+        <button class="btn btn-primary" id="btn-confirm-exported">✓ J'ai récupéré mes données</button>
+      </div>
+      <p class="micro">Marque les cartes comme exportées une fois que tu es sûr d'avoir bien
+         transféré tes données (copié-collé, partagé ou téléchargé) — ça ne les supprime pas, elles
+         restent visibles dans « Déjà exportées » et tu peux toujours les effacer manuellement.</p>
+    </section>
+
   </main>
 
   <div id="toast"></div>

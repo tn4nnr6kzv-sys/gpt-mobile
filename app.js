@@ -43,7 +43,7 @@
   // ------------------------------------------------------------------
   // Navigation
   // ------------------------------------------------------------------
-  var screens = ["home", "courses", "course-form", "round-setup", "hole"];
+  var screens = ["home", "courses", "course-form", "round-setup", "hole", "export"];
   var history = [];
 
   function showScreen(name, opts) {
@@ -98,8 +98,19 @@
             '<div class="li-title">' + escapeHtml(r.course_name || "Parcours") + '</div>' +
             '<div class="li-sub">' + r.date + ' · ' + played + '/' + r.holes.length + ' trous' +
               (strokes ? ' · ' + strokes + ' coups' : '') + '</div>' +
-          '</div><span class="li-chev">›</span>';
-        div.addEventListener("click", function () { openRound(r.id); });
+          '</div>' +
+          '<button type="button" class="li-del" data-id="' + r.id + '" title="Supprimer">🗑</button>' +
+          '<span class="li-chev">›</span>';
+        div.querySelector(".li-main").addEventListener("click", function () { openRound(r.id); });
+        div.querySelector(".li-chev").addEventListener("click", function () { openRound(r.id); });
+        div.querySelector(".li-del").addEventListener("click", function (e) {
+          e.stopPropagation();
+          if (!window.confirm("Supprimer définitivement cette carte (" + (r.course_name || "Parcours") +
+              ", " + r.date + ") ? Cette action est irréversible.")) return;
+          var all = loadRounds().filter(function (x) { return x.id !== r.id; });
+          saveRounds(all);
+          renderHome();
+        });
         el.appendChild(div);
       });
     }
@@ -808,12 +819,15 @@
   // ------------------------------------------------------------------
   // EXPORT
   // ------------------------------------------------------------------
+  var pendingExportRounds = [];
+
   function exportRounds() {
     var rounds = loadRounds().filter(function (r) { return r.status === "ready"; });
     if (!rounds.length) {
       toast("Aucune carte prête à exporter (termine une carte d'abord).");
       return;
     }
+    pendingExportRounds = rounds;
     var payload = {
       app: "golf-tracker-mobile", version: "1.0",
       exported_at: new Date().toISOString(),
@@ -849,32 +863,62 @@
       }),
     };
     var json = JSON.stringify(payload, null, 2);
-    var fname = "golf_mobile_export_" + todayISO() + ".json";
-    var file = new File([json], fname, { type: "application/json" });
-
-    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-      navigator.share({ files: [file], title: fname }).then(function () {
-        markExported(rounds);
-      }).catch(function () { /* annulé — on ne marque pas exporté */ });
-    } else {
-      var url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
-      var a = document.createElement("a");
-      a.href = url; a.download = fname;
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
-      markExported(rounds);
-    }
+    document.getElementById("export-intro").textContent =
+      rounds.length + " carte(s) prête(s) à exporter.";
+    document.getElementById("export-json-text").value = json;
+    document.getElementById("copy-status").textContent = "";
+    showScreen("export");
   }
 
-  function markExported(rounds) {
-    var ids = rounds.map(function (r) { return r.id; });
+  document.getElementById("btn-copy-export").addEventListener("click", function () {
+    var text = document.getElementById("export-json-text").value;
+    var statusEl = document.getElementById("copy-status");
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () {
+        statusEl.textContent = "✓ Copié — colle-le maintenant côté ordinateur.";
+      }).catch(function () {
+        statusEl.textContent = "Échec de la copie automatique — sélectionne le texte manuellement ci-dessous (« Voir le JSON brut »).";
+      });
+    } else {
+      statusEl.textContent = "Copie automatique indisponible — sélectionne le texte manuellement ci-dessous (« Voir le JSON brut »).";
+    }
+  });
+
+  document.getElementById("btn-share-export").addEventListener("click", function () {
+    var json = document.getElementById("export-json-text").value;
+    var fname = "golf_mobile_export_" + todayISO() + ".json";
+    var file = new File([json], fname, { type: "application/json" });
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      navigator.share({ files: [file], title: fname }).catch(function () {});
+    } else if (navigator.share) {
+      navigator.share({ text: json, title: fname }).catch(function () {});
+    } else {
+      toast("Le partage n'est pas disponible sur ce navigateur.");
+    }
+  });
+
+  document.getElementById("btn-download-export").addEventListener("click", function () {
+    var json = document.getElementById("export-json-text").value;
+    var fname = "golf_mobile_export_" + todayISO() + ".json";
+    var url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
+    var a = document.createElement("a");
+    a.href = url; a.download = fname; a.target = "_blank";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+  });
+
+  document.getElementById("btn-confirm-exported").addEventListener("click", function () {
+    if (!pendingExportRounds.length) { showScreen("home"); return; }
+    var ids = pendingExportRounds.map(function (r) { return r.id; });
     var all = loadRounds();
     all.forEach(function (r) { if (ids.indexOf(r.id) !== -1) r.status = "exported"; });
     saveRounds(all);
-    toast(rounds.length + " carte(s) exportée(s). Transfère le fichier vers ton ordinateur puis" +
-      " importe-le dans Réglages → Importer depuis le mobile.");
+    toast(pendingExportRounds.length + " carte(s) marquée(s) comme exportées.");
+    pendingExportRounds = [];
+    showScreen("home", { skipHistory: true });
+    history = ["home"];
     renderHome();
-  }
+  });
 
   // ------------------------------------------------------------------
   // Service worker (hors-ligne) + init
