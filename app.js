@@ -178,6 +178,9 @@
   var editingCourseName = null;
 
   function buildParGrid(numHoles, existingHoles) {
+    // Filet de sécurité : si numHoles est manquant/invalide (ex. donnée synchronisée mal
+    // formée), on retombe sur 18 plutôt que de générer une grille vide.
+    numHoles = (numHoles === 9 || numHoles === 18) ? numHoles : 18;
     var wrap = document.getElementById("cf-holes");
     wrap.innerHTML = "";
     for (var i = 1; i <= numHoles; i++) {
@@ -218,7 +221,7 @@
     (serverCourses || []).forEach(function (c) {
       if (!c.name || !c.holes || !c.holes.length) return;
       courses[c.name] = {
-        num_holes: c.num_holes,
+        num_holes: (c.num_holes === 9 || c.num_holes === 18) ? c.num_holes : (c.holes.length <= 9 ? 9 : 18),
         holes: c.holes.map(function (h) {
           return { hole_number: h.hole_number, par: h.par, note: h.note || "" };
         }),
@@ -276,7 +279,7 @@
     var c = name ? courses[name] : null;
     document.getElementById("course-form-title").textContent = name ? "Modifier le parcours" : "Nouveau parcours";
     document.getElementById("cf-name").value = name || "";
-    var numHoles = c ? c.num_holes : 18;
+    var numHoles = (c && (c.num_holes === 9 || c.num_holes === 18)) ? c.num_holes : 18;
     document.querySelectorAll("#cf-numholes button").forEach(function (b) {
       b.classList.toggle("active", parseInt(b.dataset.v, 10) === numHoles);
     });
@@ -500,6 +503,7 @@
   // ------------------------------------------------------------------
   var LIE_LABELS = {
     tee: "Départ", fairway: "Fairway", rough: "Rough", sand: "Bunker", recovery: "Recovery",
+    fringe: "Fringe", green: "Green (repère)",
   };
   var M_PER_YD = 0.9144;
 
@@ -613,9 +617,14 @@
     });
   });
 
+  document.getElementById("gps-lie").addEventListener("change", function () {
+    var wrap = document.getElementById("gps-club-wrap");
+    wrap.style.display = (this.value === "green") ? "none" : "";
+  });
+
   document.getElementById("btn-mark-shot").addEventListener("click", function () {
     var lie = document.getElementById("gps-lie").value;
-    var club = document.getElementById("gps-club").value || null;
+    var club = (lie === "green") ? null : (document.getElementById("gps-club").value || null);
     captureGPS(function (pos) {
       pos.lie = lie; pos.club = club;
       updateRound(currentRoundId, function (rr) {
@@ -848,7 +857,12 @@
                   : (h.pin ? haversineMeters(s, h.pin) : null);
                 if (distM == null) return null; // ni correction manuelle, ni drapeau connu
                 var distYd = distM / M_PER_YD;
-                return { lie: s.lie, distance: Math.round(distYd * 10) / 10, club: s.club || null, holed: null };
+                // Convention du système : les distances sur le green sont en PIEDS (comme la
+                // distance du 1er putt saisie à la main), tout le reste en yards.
+                var distance = (s.lie === "green")
+                  ? Math.round(distYd * 3 * 10) / 10
+                  : Math.round(distYd * 10) / 10;
+                return { lie: s.lie, distance: distance, club: s.club || null, holed: null };
               }).filter(function (x) { return x !== null; });
               if (arr.length) shotsJson = JSON.stringify(arr);
             }
