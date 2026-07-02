@@ -436,7 +436,7 @@
         fairway: null, gir: null, first_putt_ft: null,
         up_down_attempt: 0, up_down_success: 0, sand_attempt: 0, sand_success: 0,
         penalties: 0, tee_shot_distance: null, tee_shot_club: null, shots_json: null,
-        pin: null, gps_shots: [], strategy_note: h.note || "",
+        pin: null, gps_shots: [], green_mark: null, strategy_note: h.note || "",
       };
     });
 
@@ -546,6 +546,16 @@
         : "Marque-le une fois arrivé sur le green.";
     }
 
+    var greenLabel = document.getElementById("gps-green-label");
+    var greenSub = document.getElementById("gps-green-sub");
+    if (h.green_mark) {
+      greenLabel.textContent = "🟢 Position sur le green marquée";
+      greenSub.textContent = "précision ±" + h.green_mark.acc + " m — tape à nouveau pour le remplacer";
+    } else {
+      greenLabel.textContent = "Position sur le green non marquée";
+      greenSub.textContent = "Marque où se trouve ta balle une fois sur le green — sert de repère pour préciser le coup précédent, pas un vrai coup joué.";
+    }
+
     var list = document.getElementById("gps-shots-list");
     list.innerHTML = "";
     (h.gps_shots || []).forEach(function (s, i) {
@@ -617,14 +627,19 @@
     });
   });
 
-  document.getElementById("gps-lie").addEventListener("change", function () {
-    var wrap = document.getElementById("gps-club-wrap");
-    wrap.style.display = (this.value === "green") ? "none" : "";
+  document.getElementById("btn-mark-green").addEventListener("click", function () {
+    captureGPS(function (pos) {
+      updateRound(currentRoundId, function (rr) {
+        rr.holes[rr.current_index || 0].green_mark = pos;
+      });
+      toast("Position sur le green marquée (±" + pos.acc + " m).");
+      renderGpsSection();
+    });
   });
 
   document.getElementById("btn-mark-shot").addEventListener("click", function () {
     var lie = document.getElementById("gps-lie").value;
-    var club = (lie === "green") ? null : (document.getElementById("gps-club").value || null);
+    var club = document.getElementById("gps-club").value || null;
     captureGPS(function (pos) {
       pos.lie = lie; pos.club = club;
       updateRound(currentRoundId, function (rr) {
@@ -751,6 +766,7 @@
     var h = r.holes[index];
     if (h.gps_shots === undefined) h.gps_shots = [];
     if (h.pin === undefined) h.pin = null;
+    if (h.green_mark === undefined) h.green_mark = null;
     renderStrategyNote(h);
     document.getElementById("h-number").textContent = "Trou " + h.hole_number;
     document.getElementById("h-par").textContent = "Par " + h.par;
@@ -851,21 +867,29 @@
           stableford_points: r.stableford_points, result_note: r.result_note,
           holes: r.holes.map(function (h) {
             var shotsJson = null;
+            var arr = [];
             if (h.gps_shots && h.gps_shots.length) {
-              var arr = h.gps_shots.map(function (s) {
+              arr = h.gps_shots.map(function (s) {
                 var distM = s.dist_override_m != null ? s.dist_override_m
                   : (h.pin ? haversineMeters(s, h.pin) : null);
                 if (distM == null) return null; // ni correction manuelle, ni drapeau connu
                 var distYd = distM / M_PER_YD;
-                // Convention du système : les distances sur le green sont en PIEDS (comme la
-                // distance du 1er putt saisie à la main), tout le reste en yards.
-                var distance = (s.lie === "green")
-                  ? Math.round(distYd * 3 * 10) / 10
-                  : Math.round(distYd * 10) / 10;
-                return { lie: s.lie, distance: distance, club: s.club || null, holed: null };
+                return { lie: s.lie, distance: Math.round(distYd * 10) / 10, club: s.club || null, holed: null };
               }).filter(function (x) { return x !== null; });
-              if (arr.length) shotsJson = JSON.stringify(arr);
             }
+            if (h.green_mark && arr.length) {
+              // Repère de position sur le green : ajouté en dernier, en PIEDS (convention du
+              // système pour les distances sur le green — comme la distance du 1er putt saisie
+              // à la main). Ne compte jamais comme un coup joué ; sert uniquement de repère pour
+              // affiner le calcul du coup précédent.
+              var gDistM = h.green_mark.dist_override_m != null ? h.green_mark.dist_override_m
+                : (h.pin ? haversineMeters(h.green_mark, h.pin) : null);
+              if (gDistM != null) {
+                var gDistFt = Math.round((gDistM / M_PER_YD) * 3 * 10) / 10;
+                arr.push({ lie: "green", distance: gDistFt, club: null, holed: null });
+              }
+            }
+            if (arr.length) shotsJson = JSON.stringify(arr);
             return {
               hole_number: h.hole_number, par: h.par, strokes: h.strokes, putts: h.putts,
               fairway: h.fairway, gir: h.gir, first_putt_ft: h.first_putt_ft,
