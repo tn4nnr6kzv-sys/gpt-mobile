@@ -287,6 +287,44 @@
       </div>
     </section>
 
+    <!-- ============================= CLÔTURE ============================= -->
+    <section id="screen-finish" class="screen">
+      <h1>Bilan de la carte</h1>
+      <p class="micro" id="finish-intro">Quelques infos avant de clôturer — tout est optionnel.</p>
+
+      <div class="card">
+        <div class="finish-times" id="finish-times">
+          <div><span class="ft-lab">Début</span><span class="ft-val" id="ft-start">—</span></div>
+          <div><span class="ft-lab">Fin</span><span class="ft-val" id="ft-end">—</span></div>
+          <div><span class="ft-lab">Durée</span><span class="ft-val" id="ft-dur">—</span></div>
+        </div>
+
+        <label class="field" style="margin-top:14px"><span class="lab">Balles perdues</span>
+          <div class="stepper" id="st-balls">
+            <button type="button" data-d="-1">−</button>
+            <span class="val" id="v-balls">0</span>
+            <button type="button" data-d="1">+</button>
+          </div>
+        </label>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0">Sensations du jour</h3>
+        <p class="micro">Note chaque compartiment tel que tu l'as ressenti aujourd'hui.</p>
+        <div id="feelings-list"></div>
+      </div>
+
+      <div class="card">
+        <label class="field" style="margin-bottom:0"><span class="lab">Note libre (optionnel)</span>
+          <textarea id="finish-notes" rows="3" placeholder="Ce que tu retiens de cette partie…"></textarea></label>
+      </div>
+
+      <div class="hole-nav">
+        <button class="btn" id="btn-finish-back">← Revenir</button>
+        <button class="btn btn-primary" id="btn-finish-done">Clôturer la carte</button>
+      </div>
+    </section>
+
     <!-- ============================= EXPORT ============================= -->
     <section id="screen-export" class="screen">
       <h1>Exporter tes cartes</h1>

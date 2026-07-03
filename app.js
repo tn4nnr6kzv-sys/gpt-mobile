@@ -45,7 +45,22 @@
   // ------------------------------------------------------------------
   // Navigation
   // ------------------------------------------------------------------
-  var screens = ["home", "courses", "course-form", "round-setup", "hole", "export"];
+  var screens = ["home", "courses", "course-form", "round-setup", "hole", "finish", "export"];
+
+  // Critères de sensations notés en fin de carte (ordre = ordre d'affichage).
+  // Chaque critère est noté : "pos" (positif), "neu" (neutre), "neg" (négatif) ou null (non noté).
+  var FEELING_CRITERIA = [
+    { key: "tee_shots", label: "Tee shots / mises en jeu" },
+    { key: "drives_consistency", label: "Constance / qualité des drives" },
+    { key: "woods", label: "Jeu de bois de parcours (3w, 5w…)" },
+    { key: "long_irons", label: "Jeu de fers longs (3i à 6i)" },
+    { key: "irons", label: "Jeu de fers (7i à PW)" },
+    { key: "wedges", label: "Jeu à moins de 100 m & wedges" },
+    { key: "around_green", label: "Autour du green" },
+    { key: "long_putts", label: "Ficelles & putts longs (>2 m)" },
+    { key: "short_putts", label: "Putts courts (<2 m)" },
+    { key: "overall", label: "Sensation générale" },
+  ];
   var history = [];
 
   function showScreen(name, opts) {
@@ -448,6 +463,11 @@
 
     var round = {
       id: uid("r"), status: "draft",
+      started_at: new Date().toISOString(),
+      finished_at: null,
+      balls_lost: null,
+      feelings: null,
+      end_notes: null,
       course_name: courseName, date: document.getElementById("rs-date").value || todayISO(),
       tees: segValue("rs-tees"), segment: segment,
       round_type: segValue("rs-type"),
@@ -956,16 +976,121 @@
     var r = getRound(currentRoundId);
     var idx = r.current_index || 0;
     if (idx === r.holes.length - 1) {
-      updateRound(currentRoundId, function (rr) { rr.status = "ready"; });
-      toast("Carte terminée — elle est prête à être exportée.");
-      showScreen("home", { skipHistory: true });
-      history = ["home"];
-      renderHome();
+      openFinishScreen();
     } else {
       idx += 1;
       updateRound(currentRoundId, function (rr) { rr.current_index = idx; });
       loadHole(idx); renderProgress();
     }
+  });
+
+  // ------------------------------------------------------------------
+  // CLÔTURE DE CARTE (heure, balles perdues, sensations)
+  // ------------------------------------------------------------------
+  function _fmtTime(iso) {
+    if (!iso) return "—";
+    try {
+      var d = new Date(iso);
+      return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    } catch (e) { return "—"; }
+  }
+
+  function _fmtDuration(startIso, endIso) {
+    if (!startIso || !endIso) return "—";
+    var ms = new Date(endIso) - new Date(startIso);
+    if (isNaN(ms) || ms < 0) return "—";
+    var mins = Math.round(ms / 60000);
+    var h = Math.floor(mins / 60), m = mins % 60;
+    return h > 0 ? (h + " h " + (m < 10 ? "0" + m : m)) : (m + " min");
+  }
+
+  function openFinishScreen() {
+    var r = getRound(currentRoundId);
+    if (!r) return;
+    // Fige l'heure de fin à l'ouverture du bilan (première fois seulement).
+    if (!r.finished_at) {
+      updateRound(currentRoundId, function (rr) { rr.finished_at = new Date().toISOString(); });
+      r = getRound(currentRoundId);
+    }
+    document.getElementById("ft-start").textContent = _fmtTime(r.started_at);
+    document.getElementById("ft-end").textContent = _fmtTime(r.finished_at);
+    document.getElementById("ft-dur").textContent = _fmtDuration(r.started_at, r.finished_at);
+    document.getElementById("v-balls").textContent = r.balls_lost != null ? r.balls_lost : 0;
+    document.getElementById("finish-notes").value = r.end_notes || "";
+
+    // Construire la liste des critères de sensations
+    var feelings = r.feelings || {};
+    var list = document.getElementById("feelings-list");
+    list.innerHTML = "";
+    FEELING_CRITERIA.forEach(function (c) {
+      var current = feelings[c.key] || null;
+      var row = document.createElement("div");
+      row.className = "feeling-row";
+      row.innerHTML =
+        '<span class="feeling-label">' + c.label + '</span>' +
+        '<div class="feeling-opts" data-key="' + c.key + '">' +
+        '<button type="button" class="fbtn fbtn-neg' + (current === "neg" ? " active" : "") + '" data-v="neg" aria-label="Négatif">−</button>' +
+        '<button type="button" class="fbtn fbtn-neu' + (current === "neu" ? " active" : "") + '" data-v="neu" aria-label="Neutre">=</button>' +
+        '<button type="button" class="fbtn fbtn-pos' + (current === "pos" ? " active" : "") + '" data-v="pos" aria-label="Positif">+</button>' +
+        '</div>';
+      list.appendChild(row);
+    });
+
+    showScreen("finish");
+  }
+
+  // Délégation de clic pour les boutons de sensation
+  document.getElementById("feelings-list").addEventListener("click", function (e) {
+    var btn = e.target.closest(".fbtn");
+    if (!btn) return;
+    var opts = btn.closest(".feeling-opts");
+    var key = opts.getAttribute("data-key");
+    var val = btn.getAttribute("data-v");
+    var r = getRound(currentRoundId);
+    var currently = (r.feelings || {})[key] || null;
+    var newVal = (currently === val) ? null : val; // re-tap = désélection
+    updateRound(currentRoundId, function (rr) {
+      rr.feelings = rr.feelings || {};
+      if (newVal) rr.feelings[key] = newVal;
+      else delete rr.feelings[key];
+    });
+    // maj visuelle
+    opts.querySelectorAll(".fbtn").forEach(function (b) {
+      b.classList.toggle("active", b.getAttribute("data-v") === newVal);
+    });
+  });
+
+  // Stepper balles perdues
+  document.querySelectorAll("#st-balls button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var d = parseInt(b.getAttribute("data-d"), 10);
+      var r = getRound(currentRoundId);
+      var cur = r.balls_lost != null ? r.balls_lost : 0;
+      cur = Math.max(0, cur + d);
+      updateRound(currentRoundId, function (rr) { rr.balls_lost = cur; });
+      document.getElementById("v-balls").textContent = cur;
+    });
+  });
+
+  document.getElementById("finish-notes").addEventListener("input", function () {
+    var v = this.value;
+    updateRound(currentRoundId, function (rr) { rr.end_notes = v.trim() || null; });
+  });
+
+  document.getElementById("btn-finish-back").addEventListener("click", function () {
+    // Revenir au dernier trou sans clôturer
+    var r = getRound(currentRoundId);
+    loadHole(r.current_index || 0);
+    renderProgress();
+    showScreen("hole");
+  });
+
+  document.getElementById("btn-finish-done").addEventListener("click", function () {
+    updateRound(currentRoundId, function (rr) { rr.status = "ready"; });
+    toast("Carte clôturée — elle est prête à être exportée.");
+    showScreen("home", { skipHistory: true });
+    history = ["home"];
+    renderHome();
   });
 
   // ------------------------------------------------------------------
@@ -990,6 +1115,9 @@
           round_type: r.round_type, competition_name: r.competition_name,
           format: r.format, official: r.official,
           stableford_points: r.stableford_points, result_note: r.result_note,
+          started_at: r.started_at || null, finished_at: r.finished_at || null,
+          balls_lost: r.balls_lost != null ? r.balls_lost : null,
+          feelings: r.feelings || null, end_notes: r.end_notes || null,
           holes: r.holes.map(function (h) {
             var shotsJson = null;
             var arr = [];

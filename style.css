@@ -245,3 +245,29 @@ details.collapse[open] summary::before { content: "▾ "; }
 }
 .strategy-note .sn-icon { flex: 0 0 auto; }
 .strategy-note .sn-edit { flex: 0 0 auto; background: none; border: none; color: #6b5416; text-decoration: underline; font-size: 12.5px; padding: 0; }
+
+/* ===== Écran de clôture de carte ===== */
+.finish-times { display: flex; gap: 10px; }
+.finish-times > div {
+  flex: 1; text-align: center; background: var(--surface-2, #f0efe6);
+  border-radius: 10px; padding: 10px 6px;
+}
+.ft-lab { display: block; font-size: 11px; color: var(--ink-soft, #6b7167); margin-bottom: 3px; }
+.ft-val { display: block; font-family: var(--mono, monospace); font-size: 17px; font-weight: 700; }
+
+.feeling-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 0; border-bottom: 1px solid var(--line, #e2e0d5);
+}
+.feeling-row:last-child { border-bottom: none; }
+.feeling-label { flex: 1; font-size: 13.5px; line-height: 1.3; }
+.feeling-opts { flex: 0 0 auto; display: flex; gap: 5px; }
+.fbtn {
+  width: 38px; height: 38px; border-radius: 9px; border: 1.5px solid var(--line-strong, #cfcbbb);
+  background: #fff; font-size: 18px; font-weight: 700; color: var(--ink-soft, #6b7167);
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.fbtn.active.fbtn-pos { background: #d9ecd9; border-color: #2e6a4f; color: #2e6a4f; }
+.fbtn.active.fbtn-neu { background: #f6e6c4; border-color: #8a6d1f; color: #8a6d1f; }
+.fbtn.active.fbtn-neg { background: #f2d5d2; border-color: #a4322a; color: #a4322a; }
