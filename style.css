@@ -144,10 +144,11 @@ details.collapse[open] summary::before { content: "▾ "; }
 .hp-dot.done { background: var(--surface-2); color: var(--green-deep); border-color: var(--green); }
 
 .hole-head {
-  display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px;
+  display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px;
 }
 .hole-head .hn { font-family: var(--serif); font-size: 30px; }
 .hole-head .hp { color: var(--ink-soft); font-size: 14px; }
+.hole-head .hmeta { color: var(--ink-soft); font-size: 12.5px; margin-left: auto; text-align: right; font-family: var(--mono, monospace); }
 
 .stepper {
   display: flex; align-items: center; justify-content: space-between;
@@ -213,6 +214,22 @@ details.collapse[open] summary::before { content: "▾ "; }
 .gs-dist.overridden { color: var(--green-deep); font-weight: 600; }
 .gps-acc-warn { color: var(--gold); }
 
+.golf-ball-icon {
+  display: inline-block; width: 13px; height: 13px; vertical-align: -2px;
+  border-radius: 50%; background: #ffffff; border: 1px solid #b9c0b4;
+  background-image:
+    radial-gradient(circle at 30% 30%, #d7dcd2 0 1px, transparent 1.4px),
+    radial-gradient(circle at 62% 40%, #d7dcd2 0 1px, transparent 1.4px),
+    radial-gradient(circle at 45% 65%, #d7dcd2 0 1px, transparent 1.4px);
+  box-shadow: inset -1px -1px 1.5px rgba(0,0,0,.12);
+}
+.gps-live {
+  display: flex; align-items: baseline; gap: 8px; margin-top: 10px;
+  padding: 10px 14px; background: #eef4ee; border: 1px solid var(--green, #9db89d);
+  border-radius: 10px;
+}
+.gps-live-val { font-family: var(--mono, monospace); font-size: 22px; font-weight: 700; color: var(--green-deep, #2e6a4f); }
+.gps-live-lab { font-size: 12px; color: var(--ink-soft, #6b7167); }
 .tee-mark-row {
   display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
   padding: 10px 12px; background: var(--surface-2, #f0efe6); border-radius: 10px;

@@ -170,6 +170,7 @@
         <div class="hole-head">
           <span class="hn" id="h-number">Trou 1</span>
           <span class="hp" id="h-par">Par 4</span>
+          <span class="hmeta" id="h-meta"></span>
         </div>
 
         <div class="tee-mark-row">
@@ -211,7 +212,7 @@
           <button data-d="-1">−</button><span class="val" id="v-pen">0</span><button data-d="1">+</button>
         </div>
 
-        <details class="collapse">
+        <details class="collapse" id="gps-details">
           <summary>Plus de détails (1er putt, up&amp;down, bunker, club de départ)</summary>
           <label class="field"><span class="lab">Distance du 1er putt (pieds)</span>
             <input type="number" inputmode="decimal" id="h-fpd" placeholder="ex. 15"></label>
@@ -254,7 +255,7 @@
               <div class="li-title" id="gps-green-label">Position sur le green non marquée</div>
               <div class="li-sub" id="gps-green-sub">Marque où se trouve ta balle une fois sur le green — sert de repère pour préciser le coup précédent, pas un vrai coup joué.</div>
             </div>
-            <button type="button" class="btn btn-sm" id="btn-mark-green">🟢 Marquer</button>
+            <button type="button" class="btn btn-sm" id="btn-mark-green"><span class="golf-ball-icon"></span> Marquer</button>
           </div>
 
           <div id="gps-shots-list"></div>
@@ -271,6 +272,10 @@
               </select></label>
             <label class="field" id="gps-club-wrap" style="margin-bottom:0"><span class="lab">Club (optionnel)</span>
               <select id="gps-club"><option value="">—</option></select></label>
+          </div>
+          <div id="gps-live-dist" class="gps-live" style="display:none">
+            <span class="gps-live-val" id="gps-live-val">—</span>
+            <span class="gps-live-lab" id="gps-live-lab">depuis le dernier point</span>
           </div>
           <button type="button" class="btn btn-primary" id="btn-mark-shot" style="margin-top:10px">📍 Marquer ce coup</button>
         </details>

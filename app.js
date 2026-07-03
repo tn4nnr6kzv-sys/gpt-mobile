@@ -50,6 +50,8 @@
 
   function showScreen(name, opts) {
     opts = opts || {};
+    // Quitter l'écran d'un trou coupe le suivi GPS live (batterie).
+    if (name !== "hole" && typeof stopLiveDistance === "function") stopLiveDistance();
     screens.forEach(function (s) {
       document.getElementById("screen-" + s).classList.toggle("active", s === name);
     });
@@ -223,7 +225,9 @@
       courses[c.name] = {
         num_holes: (c.num_holes === 9 || c.num_holes === 18) ? c.num_holes : (c.holes.length <= 9 ? 9 : 18),
         holes: c.holes.map(function (h) {
-          return { hole_number: h.hole_number, par: h.par, note: h.note || "" };
+          return { hole_number: h.hole_number, par: h.par, note: h.note || "",
+                   stroke_index: (h.stroke_index != null ? h.stroke_index : null),
+                   yardage: (h.yardage != null ? h.yardage : null) };
         }),
       };
       n++;
@@ -433,6 +437,8 @@
     var holes = holeNumbers.map(function (h) {
       return {
         hole_number: h.hole_number, par: h.par, strokes: h.par, putts: 2,
+        stroke_index: (h.stroke_index != null ? h.stroke_index : null),
+        yardage: (h.yardage != null ? h.yardage : null),
         fairway: null, gir: null, first_putt_ft: null,
         up_down_attempt: 0, up_down_success: 0, sand_attempt: 0, sand_success: 0,
         penalties: 0, tee_shot_distance: null, tee_shot_club: null, shots_json: null,
@@ -531,6 +537,66 @@
     );
   }
 
+  // --- Distance live depuis le dernier point marqué -----------------------
+  // Un watchPosition tourne tant qu'on est sur l'écran d'un trou ET que la section GPS est
+  // ouverte. Il affiche en continu la distance depuis le dernier repère posé (dernier coup
+  // marqué, ou à défaut le départ). Arrêté dès qu'on quitte l'écran, pour préserver la batterie.
+  var _liveWatchId = null;
+  var _lastLivePos = null;
+
+  function _liveReference() {
+    var r = loadRounds().find(function (x) { return x.id === currentRoundId; });
+    if (!r) return null;
+    var h = r.holes[r.current_index || 0];
+    if (h.gps_shots && h.gps_shots.length) return h.gps_shots[h.gps_shots.length - 1];
+    if (h.tee_mark) return h.tee_mark;
+    return null;
+  }
+
+  function _renderLiveDist() {
+    var box = document.getElementById("gps-live-dist");
+    var valEl = document.getElementById("gps-live-val");
+    var labEl = document.getElementById("gps-live-lab");
+    if (!box || !valEl) return;
+    var ref = _liveReference();
+    if (!ref || !_lastLivePos) {
+      box.style.display = "none";
+      return;
+    }
+    var d = Math.round(haversineMeters(_lastLivePos, ref));
+    valEl.textContent = d + " m";
+    var r = loadRounds().find(function (x) { return x.id === currentRoundId; });
+    var h = r ? r.holes[r.current_index || 0] : null;
+    var fromTee = h && (!h.gps_shots || !h.gps_shots.length) && h.tee_mark;
+    labEl.textContent = fromTee ? "depuis le départ" : "depuis le dernier coup";
+    box.style.display = "";
+  }
+
+  function startLiveDistance() {
+    if (_liveWatchId != null || !navigator.geolocation) return;
+    // n'active le suivi que si la section GPS est ouverte (le <details>)
+    var det = document.getElementById("gps-details");
+    if (det && !det.open) return;
+    _liveWatchId = navigator.geolocation.watchPosition(
+      function (pos) {
+        _lastLivePos = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+        _renderLiveDist();
+      },
+      function () { /* silencieux : le bouton Marquer reste utilisable */ },
+      { enableHighAccuracy: true, timeout: 25000, maximumAge: 2000 }
+    );
+  }
+
+  function stopLiveDistance() {
+    if (_liveWatchId != null) {
+      navigator.geolocation.clearWatch(_liveWatchId);
+      _liveWatchId = null;
+    }
+    _lastLivePos = null;
+    var box = document.getElementById("gps-live-dist");
+    if (box) box.style.display = "none";
+  }
+
   function renderGpsSection() {
     var r = getRound(currentRoundId);
     var h = r.holes[r.current_index || 0];
@@ -549,7 +615,7 @@
     var greenLabel = document.getElementById("gps-green-label");
     var greenSub = document.getElementById("gps-green-sub");
     if (h.green_mark) {
-      greenLabel.textContent = "🟢 Position sur le green marquée";
+      greenLabel.innerHTML = '<span class="golf-ball-icon"></span> Position sur le green marquée';
       greenSub.textContent = "précision ±" + h.green_mark.acc + " m — tape à nouveau pour le remplacer";
     } else {
       greenLabel.textContent = "Position sur le green non marquée";
@@ -660,8 +726,20 @@
       });
       toast("Coup marqué (±" + pos.acc + " m).");
       renderGpsSection();
+      _renderLiveDist();
     });
   });
+
+  // Suivi live piloté par l'ouverture/fermeture de la section détails/GPS
+  (function () {
+    var det = document.getElementById("gps-details");
+    if (det) {
+      det.addEventListener("toggle", function () {
+        if (det.open) startLiveDistance();
+        else stopLiveDistance();
+      });
+    }
+  })();
 
 
   function renderProgress() {
@@ -779,9 +857,15 @@
     if (h.pin === undefined) h.pin = null;
     if (h.green_mark === undefined) h.green_mark = null;
     if (h.tee_mark === undefined) h.tee_mark = null;
+    if (h.stroke_index === undefined) h.stroke_index = null;
+    if (h.yardage === undefined) h.yardage = null;
     renderStrategyNote(h);
     document.getElementById("h-number").textContent = "Trou " + h.hole_number;
     document.getElementById("h-par").textContent = "Par " + h.par;
+    var metaParts = [];
+    if (h.stroke_index != null) metaParts.push("SI " + h.stroke_index);
+    if (h.yardage != null) metaParts.push(h.yardage + " m");
+    document.getElementById("h-meta").textContent = metaParts.join(" · ");
     document.getElementById("v-score").textContent = h.strokes != null ? h.strokes : h.par;
     document.getElementById("v-putts").textContent = h.putts != null ? h.putts : 2;
     document.getElementById("v-pen").textContent = h.penalties || 0;
@@ -799,6 +883,12 @@
     renderGpsSection();
     renderTeeMark();
     updateTotalsInline();
+    // Le trou a changé : on repart d'un état propre pour la distance live. Le <details> est
+    // replié par défaut à chaque trou, donc on stoppe le watch ; il redémarrera si l'utilisateur
+    // rouvre la section GPS.
+    stopLiveDistance();
+    var det = document.getElementById("gps-details");
+    if (det) det.open = false;
   }
 
   function renderTeeMark() {
