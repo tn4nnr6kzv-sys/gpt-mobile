@@ -7,7 +7,7 @@
 (function () {
   "use strict";
 
-  var APP_BUILD = "2026-07-02b";
+  var APP_BUILD = "2026-07-03";
 
   var LS_COURSES = "gtm_courses_v1";
   var LS_ROUNDS = "gtm_rounds_v1";
@@ -1232,25 +1232,46 @@
   document.getElementById("app-version-footnote").textContent = "Version app : " + APP_BUILD;
 
   document.getElementById("btn-refresh-app").addEventListener("click", function () {
-    if (!("serviceWorker" in navigator)) { location.reload(); return; }
-    toast("Vérification d'une nouvelle version…");
-    var reloaded = false;
-    var doReload = function () {
-      if (reloaded) return;
-      reloaded = true;
+    toast("Mise à jour en cours…");
+    // Mise à jour forcée fiable : on efface TOUS les caches du service worker (c'est ce qui
+    // manquait — reg.update() seul ne purge rien si le nom de cache n'a pas changé), on demande
+    // au SW de se ré-vérifier, puis on recharge la page depuis le réseau. Sur iOS le cache PWA
+    // est têtu : purger les caches est le seul moyen fiable de récupérer un app.js/style.css
+    // fraîchement déployés sans réinstaller l'app.
+    var done = false;
+    var finish = function () {
+      if (done) return;
+      done = true;
+      // reload(true) est ignoré par les navigateurs modernes, mais un simple reload après purge
+      // des caches suffit : les fichiers ne sont plus en cache, ils seront re-téléchargés.
       location.reload();
     };
-    // Se déclenche dès qu'une nouvelle version du service worker prend le contrôle de la page
-    // (sw.js appelle déjà skipWaiting()/clients.claim() automatiquement à l'installation).
-    navigator.serviceWorker.addEventListener("controllerchange", doReload);
-    navigator.serviceWorker.getRegistration().then(function (reg) {
-      if (!reg) { doReload(); return; }
-      reg.update().catch(function () {});
-      // Filet de sécurité : si aucun changement de contrôleur ne survient (déjà à jour, ou
-      // navigateur qui ne coopère pas), on recharge quand même après un court délai — au moins
-      // courses-data.json (réseau prioritaire) et l'état de l'app seront rafraîchis.
-      setTimeout(doReload, 1500);
-    }).catch(doReload);
+
+    var tasks = [];
+    // 1. Effacer tous les caches (CacheStorage)
+    if (window.caches && caches.keys) {
+      tasks.push(
+        caches.keys().then(function (keys) {
+          return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+        }).catch(function () {})
+      );
+    }
+    // 2. Forcer le service worker à re-vérifier sa propre mise à jour
+    if ("serviceWorker" in navigator) {
+      tasks.push(
+        navigator.serviceWorker.getRegistration().then(function (reg) {
+          if (reg) { try { reg.update(); } catch (e) {} }
+        }).catch(function () {})
+      );
+    }
+
+    Promise.all(tasks).then(function () {
+      // petit délai pour laisser les suppressions se propager, puis rechargement propre
+      setTimeout(finish, 400);
+    }).catch(finish);
+
+    // Filet de sécurité absolu : quoi qu'il arrive, on recharge au bout de 3 s.
+    setTimeout(finish, 3000);
   });
 
   // Chargement auto d'un fichier de données parcours déposé dans le dépôt (courses-data.json,

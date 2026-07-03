@@ -2,7 +2,7 @@
    Cache-first : une fois visitée en Wi-Fi, l'app fonctionne intégralement
    hors-ligne (sur le parcours, sans réseau). */
 
-const CACHE_NAME = "golftracker-mobile-v5";
+const CACHE_NAME = "golftracker-mobile-v8";
 const ASSETS = [
   "./index.html",
   "./style.css",
@@ -58,6 +58,32 @@ self.addEventListener("fetch", (event) => {
         caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
         return resp;
       }).catch(() => caches.match(event.request))
+    );
+    return;
+  }
+  // Fichiers de l'app (HTML / JS / CSS) : STALE-WHILE-REVALIDATE. On sert immédiatement la
+  // version en cache (rapide, et fonctionne hors-ligne sur le parcours), MAIS on relance en
+  // parallèle un fetch réseau qui met à jour le cache en arrière-plan. Résultat : dès qu'une
+  // nouvelle version est déployée, elle est récupérée à la visite suivante avec réseau, sans
+  // rien faire — le bouton « Actualiser l'app » ne sert plus qu'à forcer immédiatement.
+  var isAppShell = url.pathname.endsWith(".html") || url.pathname.endsWith(".js") ||
+                   url.pathname.endsWith(".css") || url.pathname.endsWith("/") ||
+                   event.request.mode === "navigate";
+  if (isAppShell) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        var network = fetch(event.request).then((resp) => {
+          if (resp && resp.status === 200) {
+            var copy = resp.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          }
+          return resp;
+        }).catch(() => null);
+        // cache d'abord (instantané), sinon on attend le réseau ; le fetch réseau tourne de
+        // toute façon en tâche de fond pour rafraîchir le cache.
+        return cached || network.then((r) => r || (event.request.mode === "navigate"
+          ? caches.match("./index.html") : Response.error()));
+      })
     );
     return;
   }
