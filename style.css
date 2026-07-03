@@ -213,6 +213,15 @@ details.collapse[open] summary::before { content: "▾ "; }
 .gs-dist.overridden { color: var(--green-deep); font-weight: 600; }
 .gps-acc-warn { color: var(--gold); }
 
+.tee-mark-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+  padding: 10px 12px; background: var(--surface-2, #f0efe6); border-radius: 10px;
+}
+.tee-mark-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.tee-mark-label { font-weight: 600; font-size: 13.5px; }
+.tee-mark-sub { font-size: 11.5px; color: var(--ink-soft, #6b7167); line-height: 1.35; }
+.tee-mark-row .btn { flex: 0 0 auto; }
+
 .strategy-note {
   background: #fdf6e3; border: 1px solid #e8d9a8; border-radius: 10px; padding: 10px 12px;
   margin-bottom: 14px; font-size: 13.5px; color: #6b5416; display: flex; align-items: flex-start; gap: 8px;

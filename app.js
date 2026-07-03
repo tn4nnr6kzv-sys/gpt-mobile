@@ -436,7 +436,7 @@
         fairway: null, gir: null, first_putt_ft: null,
         up_down_attempt: 0, up_down_success: 0, sand_attempt: 0, sand_success: 0,
         penalties: 0, tee_shot_distance: null, tee_shot_club: null, shots_json: null,
-        pin: null, gps_shots: [], green_mark: null, strategy_note: h.note || "",
+        pin: null, gps_shots: [], green_mark: null, tee_mark: null, strategy_note: h.note || "",
       };
     });
 
@@ -617,6 +617,16 @@
     });
   }
 
+  document.getElementById("btn-mark-tee").addEventListener("click", function () {
+    captureGPS(function (pos) {
+      updateRound(currentRoundId, function (rr) {
+        rr.holes[rr.current_index || 0].tee_mark = pos;
+      });
+      toast("Départ marqué (±" + pos.acc + " m).");
+      renderTeeMark();
+    });
+  });
+
   document.getElementById("btn-mark-pin").addEventListener("click", function () {
     captureGPS(function (pos) {
       updateRound(currentRoundId, function (rr) {
@@ -624,6 +634,7 @@
       });
       toast("Drapeau marqué (±" + pos.acc + " m).");
       renderGpsSection();
+      renderTeeMark();
     });
   });
 
@@ -767,6 +778,7 @@
     if (h.gps_shots === undefined) h.gps_shots = [];
     if (h.pin === undefined) h.pin = null;
     if (h.green_mark === undefined) h.green_mark = null;
+    if (h.tee_mark === undefined) h.tee_mark = null;
     renderStrategyNote(h);
     document.getElementById("h-number").textContent = "Trou " + h.hole_number;
     document.getElementById("h-par").textContent = "Par " + h.par;
@@ -785,7 +797,30 @@
     document.getElementById("btn-prev-hole").disabled = index === 0;
     document.getElementById("btn-next-hole").textContent = index === r.holes.length - 1 ? "Terminer la carte" : "Suivant →";
     renderGpsSection();
+    renderTeeMark();
     updateTotalsInline();
+  }
+
+  function renderTeeMark() {
+    var r = loadRounds().find(function (x) { return x.id === currentRoundId; });
+    if (!r) return;
+    var h = r.holes[r.current_index || 0];
+    var label = document.getElementById("tee-mark-label");
+    var sub = document.getElementById("tee-mark-sub");
+    if (!label || !sub) return;
+    if (h.tee_mark) {
+      label.textContent = "⛳ Départ marqué";
+      if (h.pin) {
+        // Longueur réelle du trou = distance départ -> drapeau (m)
+        var lenM = Math.round(haversineMeters(h.tee_mark, h.pin));
+        sub.textContent = "Longueur mesurée : " + lenM + " m (départ → drapeau). Tape à nouveau pour re-marquer.";
+      } else {
+        sub.textContent = "précision ±" + h.tee_mark.acc + " m — marque aussi le drapeau pour obtenir la longueur du trou.";
+      }
+    } else {
+      label.textContent = "Départ non marqué";
+      sub.textContent = "Marque ta position au départ pour mesurer la longueur réelle du trou.";
+    }
   }
 
   function updateTotalsInline() {
@@ -890,6 +925,12 @@
               }
             }
             if (arr.length) shotsJson = JSON.stringify(arr);
+            // Longueur réelle du trou mesurée par GPS (départ -> drapeau), en mètres, seulement
+            // si les DEUX points ont été marqués. Sert à enrichir le yardage book desktop.
+            var measuredYardage = null;
+            if (h.tee_mark && h.pin) {
+              measuredYardage = Math.round(haversineMeters(h.tee_mark, h.pin));
+            }
             return {
               hole_number: h.hole_number, par: h.par, strokes: h.strokes, putts: h.putts,
               fairway: h.fairway, gir: h.gir, first_putt_ft: h.first_putt_ft,
@@ -897,6 +938,7 @@
               sand_attempt: h.sand_attempt, sand_success: h.sand_success,
               penalties: h.penalties, tee_shot_distance: h.tee_shot_distance,
               tee_shot_club: h.tee_shot_club, shots_json: shotsJson,
+              measured_yardage_m: measuredYardage,
             };
           }),
         };
