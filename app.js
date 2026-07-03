@@ -7,7 +7,11 @@
 (function () {
   "use strict";
 
-  var APP_BUILD = "2026-07-03";
+  // Version du PWA (sémantique, comme le desktop). RÈGLE : à CHAQUE modification du PWA,
+  // incrémenter cette valeur ET le CACHE_NAME de sw.js à l'identique (ex. ici "v1.8.0" ->
+  // cache "golftracker-mobile-1.8.0"). Changer le nom du cache est ce qui force la purge et
+  // garantit que la nouvelle version s'installe proprement.
+  var APP_BUILD = "v1.8.0";
 
   var LS_COURSES = "gtm_courses_v1";
   var LS_ROUNDS = "gtm_rounds_v1";
