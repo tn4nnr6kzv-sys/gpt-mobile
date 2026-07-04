@@ -7,11 +7,69 @@
 (function () {
   "use strict";
 
+  // ---- Splash d'ouverture (cold start uniquement) -------------------------
+  // On distingue un vrai démarrage à froid d'un simple retour depuis l'arrière-plan grâce à
+  // sessionStorage : il est VIDE au lancement à froid (iOS a purgé le PWA de la mémoire) et
+  // PERSISTE tant que l'app reste vivante. Donc si le drapeau n'y est pas, c'est un cold start.
+  (function initSplash() {
+    var splash = document.getElementById("splash");
+    if (!splash) return;
+    var alreadyLaunched = false;
+    try { alreadyLaunched = sessionStorage.getItem("gt_launched") === "1"; } catch (e) {}
+    if (alreadyLaunched) {
+      // retour depuis l'arrière-plan : pas de splash
+      splash.parentNode && splash.parentNode.removeChild(splash);
+      return;
+    }
+    try { sessionStorage.setItem("gt_launched", "1"); } catch (e) {}
+
+    // Afficher le splash
+    splash.hidden = false;
+
+    // Générer des particules dorées qui montent
+    var sparkles = document.getElementById("splash-sparkles");
+    if (sparkles) {
+      var N = 14;
+      for (var i = 0; i < N; i++) {
+        var s = document.createElement("span");
+        s.className = "spark";
+        s.style.left = (5 + Math.random() * 90) + "vw";
+        s.style.setProperty("--dur", (2.4 + Math.random() * 1.8).toFixed(2) + "s");
+        s.style.setProperty("--delay", (Math.random() * 1.6).toFixed(2) + "s");
+        s.style.setProperty("--rise", (55 + Math.random() * 35) + "vh");
+        var sz = (4 + Math.random() * 5).toFixed(1);
+        s.style.width = sz + "px"; s.style.height = sz + "px";
+        sparkles.appendChild(s);
+      }
+    }
+
+    var TOTAL = 3500;  // durée cible ~3,5 s
+    var dismissed = false;
+    function dismiss() {
+      if (dismissed) return;
+      dismissed = true;
+      splash.classList.add("splash-out");
+      // retirer du DOM après l'animation de sortie
+      setTimeout(function () {
+        if (splash.parentNode) splash.parentNode.removeChild(splash);
+      }, 750);
+    }
+    // fin automatique
+    var timer = setTimeout(dismiss, TOTAL);
+    // bouton Passer
+    var skip = document.getElementById("splash-skip");
+    if (skip) skip.addEventListener("click", function () { clearTimeout(timer); dismiss(); });
+    // sécurité : si l'utilisateur tape n'importe où après 1 s, on peut passer aussi
+    splash.addEventListener("click", function (e) {
+      if (e.target === skip) return;
+    });
+  })();
+
   // Version du PWA (sémantique, comme le desktop). RÈGLE : à CHAQUE modification du PWA,
   // incrémenter cette valeur ET le CACHE_NAME de sw.js à l'identique (ex. ici "v1.8.0" ->
   // cache "golftracker-mobile-1.8.0"). Changer le nom du cache est ce qui force la purge et
   // garantit que la nouvelle version s'installe proprement.
-  var APP_BUILD = "v1.9.2";
+  var APP_BUILD = "v1.10.1";
 
   var LS_COURSES = "gtm_courses_v1";
   var LS_ROUNDS = "gtm_rounds_v1";

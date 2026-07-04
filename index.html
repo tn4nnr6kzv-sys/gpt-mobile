@@ -15,6 +15,19 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!-- Splash d'ouverture (démarrage à froid uniquement) : logo en fondu + scintillement doré,
+       puis zoom vers l'app. Masqué par défaut ; activé en JS seulement au cold start. -->
+  <div id="splash" class="splash" aria-hidden="true" hidden>
+    <div class="splash-glow"></div>
+    <div class="splash-sparkles" id="splash-sparkles"></div>
+    <div class="splash-logo-wrap">
+      <img src="icon-512.png" alt="" class="splash-logo">
+      <div class="splash-sheen"></div>
+    </div>
+    <div class="splash-title">Golf<span>Tracker</span></div>
+    <button type="button" class="splash-skip" id="splash-skip">Passer</button>
+  </div>
+
   <header class="topbar">
     <button class="back-btn" id="btn-back" style="visibility:hidden">← Retour</button>
     <span class="brand">⛳ Golf<em>Tracker</em> <small>mobile</small></span>
