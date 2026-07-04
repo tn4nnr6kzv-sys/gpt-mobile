@@ -11,7 +11,7 @@
   // incrémenter cette valeur ET le CACHE_NAME de sw.js à l'identique (ex. ici "v1.8.0" ->
   // cache "golftracker-mobile-1.8.0"). Changer le nom du cache est ce qui force la purge et
   // garantit que la nouvelle version s'installe proprement.
-  var APP_BUILD = "v1.8.0";
+  var APP_BUILD = "v1.9.0";
 
   var LS_COURSES = "gtm_courses_v1";
   var LS_ROUNDS = "gtm_rounds_v1";
@@ -1161,6 +1161,7 @@
               penalties: h.penalties, tee_shot_distance: h.tee_shot_distance,
               tee_shot_club: h.tee_shot_club, shots_json: shotsJson,
               measured_yardage_m: measuredYardage,
+              strategy_note: (h.strategy_note && h.strategy_note.trim()) ? h.strategy_note.trim() : null,
             };
           }),
         };

@@ -3,9 +3,9 @@
    hors-ligne (sur le parcours, sans réseau). */
 
 // Nom du cache = version du PWA. RÈGLE : garder synchronisé avec APP_BUILD dans app.js à
-// chaque modification (ex. app.js "v1.8.0" -> cache "golftracker-mobile-1.8.0"). Le changement
+// chaque modification (ex. app.js "v1.8.0" -> cache "golftracker-mobile-1.9.0"). Le changement
 // de ce nom déclenche la purge de l'ancien cache à l'activation (voir handler 'activate').
-const CACHE_NAME = "golftracker-mobile-1.8.0";
+const CACHE_NAME = "golftracker-mobile-1.9.0";
 const ASSETS = [
   "./index.html",
   "./style.css",
