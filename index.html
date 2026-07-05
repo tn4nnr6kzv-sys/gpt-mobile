@@ -291,13 +291,58 @@
             <button class="opt-btn" data-v="att">Tenté, raté</button>
             <button class="opt-btn" data-v="ok">Réussi</button>
           </div>
+
+          <details class="collapse" id="gps-details" style="margin-top:14px">
+            <summary>📍 Log GPS coup par coup <small style="font-weight:400;color:var(--ink-soft)">(optionnel, en direct sur le parcours)</small></summary>
+            <p class="micro">Marque ta position à chaque coup avant de jouer (départ, fairway, rough,
+               bunker…). La distance de chaque coup et le strokes gained (départ/approche/petit jeu)
+               seront calculés automatiquement à l'export — et remplacent le club/distance de départ
+               saisis en section 1 si un log est présent.</p>
+
+            <div id="gps-shots-list"></div>
+
+            <div class="grid-2" style="margin-top:8px">
+              <label class="field" style="margin-bottom:0"><span class="lab">Type de coup</span>
+                <select id="gps-lie">
+                  <option value="tee">Départ</option>
+                  <option value="fairway" selected>Fairway</option>
+                  <option value="rough">Rough</option>
+                  <option value="sand">Bunker</option>
+                  <option value="recovery">Recovery</option>
+                  <option value="fringe">Fringe (prégreen)</option>
+                </select></label>
+              <label class="field" id="gps-club-wrap" style="margin-bottom:0"><span class="lab">Club (optionnel)</span>
+                <select id="gps-club"><option value="">—</option></select></label>
+            </div>
+            <div id="gps-live-dist" class="gps-live" style="display:none">
+              <span class="gps-live-val" id="gps-live-val">—</span>
+              <span class="gps-live-lab" id="gps-live-lab">depuis le dernier point</span>
+            </div>
+            <button type="button" class="btn btn-primary" id="btn-mark-shot" style="margin-top:10px">📍 Marquer ce coup</button>
+          </details>
         </div>
 
         <!-- ③ PUTTING ----------------------------------------------------- -->
         <div class="hole-section">
           <div class="hole-section-head"><span class="hs-num">3</span><span class="hs-icon">🏌️</span>Putting</div>
 
-          <span class="lab" style="display:block;margin-bottom:4px">Putts</span>
+          <div class="list-item" style="padding:8px 0">
+            <div class="li-main">
+              <div class="li-title" id="gps-pin-label">Drapeau non marqué</div>
+              <div class="li-sub" id="gps-pin-sub">Marque-le une fois arrivé sur le green.</div>
+            </div>
+            <button type="button" class="btn btn-sm" id="btn-mark-pin">🚩 Marquer</button>
+          </div>
+
+          <div class="list-item" style="padding:8px 0">
+            <div class="li-main">
+              <div class="li-title" id="gps-green-label">Position sur le green non marquée</div>
+              <div class="li-sub" id="gps-green-sub">Marque où se trouve ta balle une fois sur le green — sert de repère pour préciser le coup précédent, pas un vrai coup joué.</div>
+            </div>
+            <button type="button" class="btn btn-sm" id="btn-mark-green"><span class="golf-ball-icon"></span> Marquer</button>
+          </div>
+
+          <span class="lab" style="display:block;margin:12px 0 4px">Putts</span>
           <div class="stepper" id="st-putts">
             <button data-d="-1">−</button><span class="val" id="v-putts">2</span><button data-d="1">+</button>
           </div>
@@ -320,52 +365,6 @@
             <button data-d="-1">−</button><span class="val" id="v-pen">0</span><button data-d="1">+</button>
           </div>
         </div>
-
-        <!-- LOG GPS AVANCÉ (replié) --------------------------------------- -->
-        <details class="collapse" id="gps-details">
-          <summary>📍 Log GPS coup par coup <small style="font-weight:400;color:var(--ink-soft)">(optionnel, en direct sur le parcours)</small></summary>
-          <p class="micro">Marque ta position à chaque coup avant de jouer (départ, fairway, rough,
-             bunker…), puis le drapeau une fois sur le green. La distance de chaque coup et le
-             strokes gained (départ/approche/petit jeu) seront calculés automatiquement à l'export —
-             et remplacent le club/distance de départ saisis ci-dessus si un log est présent.</p>
-
-          <div class="list-item" style="padding:10px 0">
-            <div class="li-main">
-              <div class="li-title" id="gps-pin-label">Drapeau non marqué</div>
-              <div class="li-sub" id="gps-pin-sub">Marque-le une fois arrivé sur le green.</div>
-            </div>
-            <button type="button" class="btn btn-sm" id="btn-mark-pin">🚩 Marquer</button>
-          </div>
-
-          <div class="list-item" style="padding:10px 0">
-            <div class="li-main">
-              <div class="li-title" id="gps-green-label">Position sur le green non marquée</div>
-              <div class="li-sub" id="gps-green-sub">Marque où se trouve ta balle une fois sur le green — sert de repère pour préciser le coup précédent, pas un vrai coup joué.</div>
-            </div>
-            <button type="button" class="btn btn-sm" id="btn-mark-green"><span class="golf-ball-icon"></span> Marquer</button>
-          </div>
-
-          <div id="gps-shots-list"></div>
-
-          <div class="grid-2" style="margin-top:8px">
-            <label class="field" style="margin-bottom:0"><span class="lab">Type de coup</span>
-              <select id="gps-lie">
-                <option value="tee">Départ</option>
-                <option value="fairway" selected>Fairway</option>
-                <option value="rough">Rough</option>
-                <option value="sand">Bunker</option>
-                <option value="recovery">Recovery</option>
-                <option value="fringe">Fringe (prégreen)</option>
-              </select></label>
-            <label class="field" id="gps-club-wrap" style="margin-bottom:0"><span class="lab">Club (optionnel)</span>
-              <select id="gps-club"><option value="">—</option></select></label>
-          </div>
-          <div id="gps-live-dist" class="gps-live" style="display:none">
-            <span class="gps-live-val" id="gps-live-val">—</span>
-            <span class="gps-live-lab" id="gps-live-lab">depuis le dernier point</span>
-          </div>
-          <button type="button" class="btn btn-primary" id="btn-mark-shot" style="margin-top:10px">📍 Marquer ce coup</button>
-        </details>
       </div>
 
       <div class="hole-nav">
