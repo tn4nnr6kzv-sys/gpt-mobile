@@ -279,6 +279,29 @@
           <label class="field"><span class="lab">Distance du drive (m)</span>
             <input type="number" inputmode="numeric" id="h-drivedist" placeholder="ex. 210"></label>
 
+          <span class="lab" style="display:block;margin-top:12px">Forme du tee shot</span>
+          <div class="opt-row opt-row-wrap" id="opt-teeshape">
+            <button class="opt-btn" data-v="straight">Droit</button>
+            <button class="opt-btn" data-v="draw">Draw</button>
+            <button class="opt-btn" data-v="fade">Fade</button>
+            <button class="opt-btn" data-v="hook">Hook</button>
+            <button class="opt-btn" data-v="slice">Slice</button>
+          </div>
+
+          <span class="lab" style="display:block;margin-top:12px">Profondeur du drapeau</span>
+          <div class="opt-row" id="opt-pindepth">
+            <button class="opt-btn" data-v="front">Entrée</button>
+            <button class="opt-btn" data-v="middle">Milieu</button>
+            <button class="opt-btn" data-v="back">Fond</button>
+          </div>
+
+          <span class="lab" style="display:block;margin-top:12px">Position du drapeau</span>
+          <div class="opt-row" id="opt-pinside">
+            <button class="opt-btn" data-v="left">Gauche</button>
+            <button class="opt-btn" data-v="center">Centre</button>
+            <button class="opt-btn" data-v="right">Droite</button>
+          </div>
+
           <h3>Log GPS des coups <small style="font-weight:400;color:var(--ink-soft)">(optionnel)</small></h3>
           <p class="micro">Marque ta position à chaque coup avant de jouer (départ, fairway, rough,
              bunker…), puis le drapeau une fois sur le green. La distance de chaque coup et le

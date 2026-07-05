@@ -69,7 +69,7 @@
   // incrémenter cette valeur ET le CACHE_NAME de sw.js à l'identique (ex. ici "v1.8.0" ->
   // cache "golftracker-mobile-1.8.0"). Changer le nom du cache est ce qui force la purge et
   // garantit que la nouvelle version s'installe proprement.
-  var APP_BUILD = "v1.14.0";
+  var APP_BUILD = "v1.15.0";
 
   var LS_COURSES = "gtm_courses_v1";
   var LS_ROUNDS = "gtm_rounds_v1";
@@ -355,7 +355,7 @@
         '<div class="li-main">' +
           '<div class="li-title">' + escapeHtml(s.title || "") +
             ' <span style="font-weight:400;font-size:11.5px;color:var(--ink-soft)">(' +
-            (s.source === "focus" ? "Focus" : "Analyse") + ')</span></div>' +
+            (s.source === "focus" ? "Focus" : (s.source === "feelings" ? "Ressenti" : "Analyse")) + ')</span></div>' +
           '<div class="li-sub">' + escapeHtml(s.diagnostic || "") + '</div>' +
           '<div class="li-sub" style="margin-top:4px">' + escapeHtml(s.advice || "") + '</div>' +
         '</div>' +
@@ -1165,6 +1165,9 @@
     gir: ["opt-gir", "gir"],
     updown: ["opt-updown", null],
     sand: ["opt-sand", null],
+    teeshape: ["opt-teeshape", null],
+    pindepth: ["opt-pindepth", null],
+    pinside: ["opt-pinside", null],
   };
 
   function bindOptRow(elId) {
@@ -1173,7 +1176,7 @@
         var siblings = btn.parentElement.querySelectorAll(".opt-btn");
         var isActive = btn.classList.contains("selected");
         siblings.forEach(function (b) {
-          b.classList.remove("selected", "active-hit", "active-miss", "active-yes", "active-no", "active-ok", "active-na");
+          b.classList.remove("selected", "active-hit", "active-miss", "active-yes", "active-no", "active-ok", "active-na", "active-sel");
         });
         if (!isActive) {
           btn.classList.add("selected");
@@ -1184,6 +1187,7 @@
           else if (v === "0") btn.classList.add("active-no");
           else if (v === "ok") btn.classList.add("active-ok");
           else if (v === "att") btn.classList.add("active-na");
+          else btn.classList.add("active-sel");
         }
         saveCurrentHole();
       });
@@ -1194,7 +1198,7 @@
   function setOptRow(elId, value) {
     var btns = document.getElementById(elId).querySelectorAll(".opt-btn");
     btns.forEach(function (b) {
-      b.classList.remove("selected", "active-hit", "active-miss", "active-yes", "active-no", "active-ok", "active-na");
+      b.classList.remove("selected", "active-hit", "active-miss", "active-yes", "active-no", "active-ok", "active-na", "active-sel");
       if (b.dataset.v === String(value)) {
         b.classList.add("selected");
         var v = b.dataset.v;
@@ -1204,6 +1208,7 @@
         else if (v === "0") b.classList.add("active-no");
         else if (v === "ok") b.classList.add("active-ok");
         else if (v === "att") b.classList.add("active-na");
+        else b.classList.add("active-sel");
       }
     });
   }
@@ -1282,6 +1287,9 @@
     document.getElementById("h-fpd").value = h.first_putt_ft != null ? h.first_putt_ft : "";
     document.getElementById("h-drivedist").value = h.tee_shot_distance != null ? h.tee_shot_distance : "";
     document.getElementById("h-club").value = h.tee_shot_club || "";
+    setOptRow("opt-teeshape", h.tee_shot_shape || "");
+    setOptRow("opt-pindepth", h.pin_depth || "");
+    setOptRow("opt-pinside", h.pin_side || "");
 
     document.getElementById("btn-prev-hole").disabled = index === 0;
     document.getElementById("btn-next-hole").textContent = index === r.holes.length - 1 ? "Terminer la carte" : "Suivant →";
@@ -1344,6 +1352,9 @@
       var dd = document.getElementById("h-drivedist").value;
       h.tee_shot_distance = dd !== "" ? parseFloat(dd) : null;
       h.tee_shot_club = document.getElementById("h-club").value || null;
+      h.tee_shot_shape = getOptRow("opt-teeshape") || null;
+      h.pin_depth = getOptRow("opt-pindepth") || null;
+      h.pin_side = getOptRow("opt-pinside") || null;
       h._touched = true;
     });
   }
@@ -1543,7 +1554,8 @@
               up_down_attempt: h.up_down_attempt, up_down_success: h.up_down_success,
               sand_attempt: h.sand_attempt, sand_success: h.sand_success,
               penalties: h.penalties, tee_shot_distance: h.tee_shot_distance,
-              tee_shot_club: h.tee_shot_club, shots_json: shotsJson,
+              tee_shot_club: h.tee_shot_club, tee_shot_shape: h.tee_shot_shape,
+              pin_depth: h.pin_depth, pin_side: h.pin_side, shots_json: shotsJson,
               measured_yardage_m: measuredYardage,
               strategy_note: (h.strategy_note && h.strategy_note.trim()) ? h.strategy_note.trim() : null,
             };

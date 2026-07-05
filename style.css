@@ -162,6 +162,7 @@ details.collapse[open] summary::before { content: "▾ "; }
 .stepper .val { font-family: var(--serif); font-size: 28px; min-width: 46px; text-align: center; }
 
 .opt-row { display: flex; gap: 8px; margin-top: 4px; }
+.opt-row-wrap { flex-wrap: wrap; }
 .opt-btn {
   flex: 1; padding: 12px 4px; border-radius: 10px; border: 1px solid var(--line-strong);
   background: #fff; font-size: 13.5px; font-weight: 600; color: var(--ink-soft);
@@ -169,6 +170,7 @@ details.collapse[open] summary::before { content: "▾ "; }
 .opt-btn.active-hit, .opt-btn.active-yes, .opt-btn.active-ok { background: var(--pos); border-color: var(--pos); color: #fff; }
 .opt-btn.active-miss, .opt-btn.active-no { background: var(--neg); border-color: var(--neg); color: #fff; }
 .opt-btn.active-na { background: var(--surface-2); border-color: var(--line-strong); color: var(--ink-soft); }
+.opt-btn.active-sel { background: var(--green-bright); border-color: var(--green-bright); color: #fff; }
 
 .totals-bar {
   position: sticky; bottom: 0; margin: 14px -14px -14px; padding: 10px 14px calc(10px + var(--safe-bottom));
