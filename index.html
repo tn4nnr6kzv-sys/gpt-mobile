@@ -379,6 +379,18 @@
       <p class="micro">Déduites de tes pages Focus &amp; Analyse sur l'ordinateur.</p>
       <button class="btn" id="btn-sync-suggestions" style="margin-bottom:6px">🔄 Charger depuis le PC</button>
       <p class="micro" id="suggestions-status"></p>
+
+      <details class="collapse">
+        <summary>Pas de réseau/HTTPS ? Importer sans connexion</summary>
+        <p class="micro">Depuis <em>Réglages → Recommandations de practice</em> sur l'ordinateur,
+           télécharge le fichier ou copie son contenu, puis importe-le ici.</p>
+        <button type="button" class="btn btn-sm" id="btn-import-suggestions-file">📁 Importer un fichier JSON</button>
+        <input type="file" id="suggestions-file-input" accept="application/json" style="display:none">
+        <label class="field" style="margin-top:10px"><span class="lab">Ou coller le JSON</span>
+          <textarea id="suggestions-paste-text" rows="3" placeholder='[{"title": "...", ...}]'></textarea></label>
+        <button type="button" class="btn btn-sm btn-primary" id="btn-import-suggestions-paste">Importer le JSON collé</button>
+      </details>
+
       <div class="card" id="list-suggestions"><div class="empty"><span class="flag">💡</span>Aucune recommandation chargée pour l'instant.</div></div>
 
       <h3>À exporter</h3>

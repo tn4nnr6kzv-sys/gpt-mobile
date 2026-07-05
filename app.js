@@ -69,7 +69,7 @@
   // incrémenter cette valeur ET le CACHE_NAME de sw.js à l'identique (ex. ici "v1.8.0" ->
   // cache "golftracker-mobile-1.8.0"). Changer le nom du cache est ce qui force la purge et
   // garantit que la nouvelle version s'installe proprement.
-  var APP_BUILD = "v1.13.0";
+  var APP_BUILD = "v1.14.0";
 
   var LS_COURSES = "gtm_courses_v1";
   var LS_ROUNDS = "gtm_rounds_v1";
@@ -370,6 +370,16 @@
     });
   }
 
+  function applySuggestions(suggestions, statusEl, successPrefix) {
+    if (!Array.isArray(suggestions)) {
+      statusEl.textContent = "Fichier illisible : ce n'est pas une liste de recommandations valide.";
+      return;
+    }
+    savePracticeSuggestions(suggestions);
+    renderPracticeSuggestions();
+    statusEl.textContent = successPrefix + suggestions.length + " recommandation(s) chargée(s).";
+  }
+
   document.getElementById("btn-sync-suggestions").addEventListener("click", function () {
     var statusEl = document.getElementById("suggestions-status");
     var base = serverBaseUrl();
@@ -382,13 +392,43 @@
       if (!r.ok) throw new Error("HTTP " + r.status);
       return r.json();
     }).then(function (suggestions) {
-      savePracticeSuggestions(suggestions || []);
-      renderPracticeSuggestions();
-      statusEl.textContent = (suggestions || []).length + " recommandation(s) chargée(s).";
+      applySuggestions(suggestions || [], statusEl, "");
     }).catch(function () {
       statusEl.textContent = "Synchronisation réseau impossible — vérifie l'adresse (dans Mes " +
-        "parcours), que tu es sur le même Wi-Fi, et que le PC a un certificat HTTPS valide.";
+        "parcours), que tu es sur le même Wi-Fi, et que le PC a un certificat HTTPS valide. " +
+        "Sinon, utilise « Pas de réseau/HTTPS ? Importer sans connexion » ci-dessous.";
     });
+  });
+
+  document.getElementById("btn-import-suggestions-file").addEventListener("click", function () {
+    document.getElementById("suggestions-file-input").click();
+  });
+  document.getElementById("suggestions-file-input").addEventListener("change", function (e) {
+    var statusEl = document.getElementById("suggestions-status");
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      try {
+        applySuggestions(JSON.parse(reader.result), statusEl, "Fichier importé : ");
+      } catch (err) {
+        statusEl.textContent = "Fichier illisible (JSON invalide).";
+      }
+    };
+    reader.onerror = function () { statusEl.textContent = "Impossible de lire ce fichier."; };
+    reader.readAsText(file);
+    e.target.value = "";
+  });
+
+  document.getElementById("btn-import-suggestions-paste").addEventListener("click", function () {
+    var statusEl = document.getElementById("suggestions-status");
+    var raw = document.getElementById("suggestions-paste-text").value.trim();
+    if (!raw) { statusEl.textContent = "Colle d'abord le JSON depuis l'ordinateur."; return; }
+    try {
+      applySuggestions(JSON.parse(raw), statusEl, "JSON collé importé : ");
+    } catch (err) {
+      statusEl.textContent = "JSON illisible — vérifie que tu as bien copié tout le contenu.";
+    }
   });
 
   var currentPracticeId = null;
