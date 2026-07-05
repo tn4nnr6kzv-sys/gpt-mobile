@@ -69,7 +69,7 @@
   // incrémenter cette valeur ET le CACHE_NAME de sw.js à l'identique (ex. ici "v1.8.0" ->
   // cache "golftracker-mobile-1.8.0"). Changer le nom du cache est ce qui force la purge et
   // garantit que la nouvelle version s'installe proprement.
-  var APP_BUILD = "v1.11.0";
+  var APP_BUILD = "v1.12.0";
 
   var LS_COURSES = "gtm_courses_v1";
   var LS_ROUNDS = "gtm_rounds_v1";
@@ -108,6 +108,13 @@
     catch (e) { return []; }
   }
   function savePractice(p) { localStorage.setItem(LS_PRACTICE, JSON.stringify(p)); }
+
+  var LS_PRACTICE_SUGGESTIONS = "gtm_practice_suggestions_v1";
+  function loadPracticeSuggestions() {
+    try { return JSON.parse(localStorage.getItem(LS_PRACTICE_SUGGESTIONS)) || []; }
+    catch (e) { return []; }
+  }
+  function savePracticeSuggestions(s) { localStorage.setItem(LS_PRACTICE_SUGGESTIONS, JSON.stringify(s)); }
 
   function uid(prefix) {
     return prefix + "_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 7);
@@ -226,8 +233,13 @@
   function saveServerAddress(v) { localStorage.setItem(LS_SERVER, v); }
 
   function serverBaseUrl() {
-    var raw = document.getElementById("server-address").value.trim();
-    saveServerAddress(raw);
+    var input = document.getElementById("server-address");
+    var raw = input ? input.value.trim() : "";
+    if (raw) {
+      saveServerAddress(raw);
+    } else {
+      raw = loadServerAddress();
+    }
     if (!raw) return null;
     // Accepte "192.168.1.20:5000" comme "https://192.168.1.20:5000" ou une URL déjà complète.
     if (!/^https?:\/\//i.test(raw)) raw = "https://" + raw;
@@ -291,7 +303,60 @@
     }
     renderList(document.getElementById("list-practice-ready"), groups.ready, "🏌️", "Aucune séance enregistrée.");
     renderList(document.getElementById("list-practice-exported"), groups.exported, "✅", "—");
+    renderPracticeSuggestions();
   }
+
+  function renderPracticeSuggestions() {
+    var el = document.getElementById("list-suggestions");
+    var suggestions = loadPracticeSuggestions();
+    if (!suggestions.length) {
+      el.innerHTML = '<div class="empty"><span class="flag">💡</span>Aucune recommandation chargée pour l\'instant.</div>';
+      return;
+    }
+    el.innerHTML = "";
+    suggestions.forEach(function (s) {
+      var div = document.createElement("div");
+      div.className = "list-item";
+      div.style.display = "block";
+      div.innerHTML =
+        '<div class="li-main">' +
+          '<div class="li-title">' + escapeHtml(s.title || "") +
+            ' <span style="font-weight:400;font-size:11.5px;color:var(--ink-soft)">(' +
+            (s.source === "focus" ? "Focus" : "Analyse") + ')</span></div>' +
+          '<div class="li-sub">' + escapeHtml(s.diagnostic || "") + '</div>' +
+          '<div class="li-sub" style="margin-top:4px">' + escapeHtml(s.advice || "") + '</div>' +
+        '</div>' +
+        '<div class="btn-row" style="margin-top:8px">' +
+          '<button type="button" class="btn btn-sm btn-primary sugg-start">+ Séance sur cette zone</button>' +
+        '</div>';
+      div.querySelector(".sugg-start").addEventListener("click", function () {
+        openPracticeForm(null, s.practice_zone);
+        showScreen("practice-form");
+      });
+      el.appendChild(div);
+    });
+  }
+
+  document.getElementById("btn-sync-suggestions").addEventListener("click", function () {
+    var statusEl = document.getElementById("suggestions-status");
+    var base = serverBaseUrl();
+    if (!base) {
+      statusEl.textContent = "Renseigne l'adresse du PC dans Mes parcours d'abord.";
+      return;
+    }
+    statusEl.textContent = "Synchronisation…";
+    fetch(base + "/api/practice-suggestions.json").then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    }).then(function (suggestions) {
+      savePracticeSuggestions(suggestions || []);
+      renderPracticeSuggestions();
+      statusEl.textContent = (suggestions || []).length + " recommandation(s) chargée(s).";
+    }).catch(function () {
+      statusEl.textContent = "Synchronisation réseau impossible — vérifie l'adresse (dans Mes " +
+        "parcours), que tu es sur le même Wi-Fi, et que le PC a un certificat HTTPS valide.";
+    });
+  });
 
   var currentPracticeId = null;
 
@@ -331,7 +396,7 @@
     wrap.appendChild(div);
   }
 
-  function openPracticeForm(id) {
+  function openPracticeForm(id, presetZone) {
     currentPracticeId = id || null;
     var s = id ? loadPractice().find(function (x) { return x.id === id; }) : null;
     document.getElementById("practice-form-title").textContent = s ? "Modifier la séance" : "Nouvelle séance";
@@ -343,6 +408,8 @@
     wrap.innerHTML = "";
     if (s && s.exercises && s.exercises.length) {
       s.exercises.forEach(function (ex) { addExerciseRow(ex); });
+    } else if (presetZone) {
+      addExerciseRow({ zone: presetZone });
     } else {
       addExerciseRow();
     }
