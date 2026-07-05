@@ -380,3 +380,53 @@ details.collapse[open] summary::before { content: "▾ "; }
     animation-duration: .01s !important;
   }
 }
+
+/* ============================================================
+   ÉCRAN D'ACCUEIL (choix Round / Practice)
+   Reprend le langage visuel du splash (halo doré, logo, titre serif) mais comme un écran
+   normal de l'app — pas un overlay plein écran ponctuel.
+   ============================================================ */
+.landing-hero {
+  position: relative; overflow: hidden;
+  background: radial-gradient(120% 100% at 50% 20%, #24583f 0%, #1b4332 55%, #133026 100%);
+  border-radius: var(--radius);
+  padding: 34px 20px 28px;
+  text-align: center;
+  color: #f3ead2;
+  box-shadow: 0 10px 30px rgba(20,36,28,.25);
+}
+.landing-glow {
+  position: absolute; top: -8%; left: 50%; transform: translateX(-50%);
+  width: 260px; height: 260px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(201,182,140,.32) 0%, rgba(181,130,31,.14) 38%, transparent 68%);
+  filter: blur(6px);
+  animation: splash-breathe 2.4s ease-in-out infinite;
+  pointer-events: none;
+}
+.landing-sparkles { position: absolute; inset: 0; pointer-events: none; }
+.landing-logo-wrap {
+  position: relative; width: 88px; height: 88px; margin: 0 auto;
+  border-radius: 24%; overflow: hidden;
+  box-shadow: 0 10px 26px rgba(0,0,0,.35), 0 0 0 1px rgba(201,182,140,.25);
+}
+.landing-logo { width: 100%; height: 100%; object-fit: cover; display: block; }
+.landing-title {
+  position: relative; z-index: 1; margin-top: 14px;
+  font-family: var(--serif); font-size: 23px; letter-spacing: .4px;
+}
+.landing-title span { color: var(--sand, #c9b68c); font-style: italic; }
+.landing-sub { position: relative; z-index: 1; margin: 6px 0 0; font-size: 13px; color: #d8e4da; opacity: .9; }
+
+.landing-choices { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 12px; margin-top: 22px; }
+.landing-card {
+  display: flex; align-items: center; gap: 14px; width: 100%;
+  background: rgba(255,255,255,.08); border: 1px solid rgba(201,182,140,.32);
+  border-radius: 12px; padding: 14px 16px; color: #fff; cursor: pointer;
+  font-family: inherit; text-align: left; transition: background .15s;
+}
+.landing-card:active { background: rgba(255,255,255,.17); }
+.landing-card-icon { font-size: 26px; flex: none; }
+.landing-card-text { flex: 1; display: flex; flex-direction: column; }
+.landing-card-label { font-family: var(--serif); font-size: 16.5px; }
+.landing-card-desc { font-size: 12px; color: #cfe0d4; margin-top: 2px; }
+.landing-card-chev { font-size: 20px; color: #cfe0d4; flex: none; }

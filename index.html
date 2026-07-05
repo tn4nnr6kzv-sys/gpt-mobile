@@ -31,20 +31,55 @@
   <header class="topbar">
     <button class="back-btn" id="btn-back" style="visibility:hidden">← Retour</button>
     <span class="brand">⛳ Golf<em>Tracker</em> <small>mobile</small></span>
-    <span style="width:60px"></span>
+    <button class="back-btn" id="btn-home" style="visibility:hidden" title="Accueil">🏠</button>
   </header>
 
   <main id="app">
 
-    <!-- ============================= ACCUEIL ============================= -->
-    <section id="screen-home" class="screen active">
-      <h1>Mes cartes</h1>
+    <!-- ============================= ACCUEIL (choix du mode) ============================= -->
+    <section id="screen-landing" class="screen active">
+      <div class="landing-hero">
+        <div class="landing-glow" aria-hidden="true"></div>
+        <div class="landing-sparkles" id="landing-sparkles" aria-hidden="true"></div>
+        <div class="landing-logo-wrap">
+          <img src="icon-512.png" alt="" class="landing-logo">
+        </div>
+        <div class="landing-title">Golf<span>Tracker</span></div>
+        <p class="landing-sub">Que fait-on aujourd'hui ?</p>
+        <div class="landing-choices">
+          <button type="button" class="landing-card" id="btn-go-rounds">
+            <span class="landing-card-icon">⛳</span>
+            <span class="landing-card-text">
+              <span class="landing-card-label">Round</span>
+              <span class="landing-card-desc">Suivre une carte sur le parcours</span>
+            </span>
+            <span class="landing-card-chev">›</span>
+          </button>
+          <button type="button" class="landing-card" id="btn-go-practice">
+            <span class="landing-card-icon">🏌️</span>
+            <span class="landing-card-text">
+              <span class="landing-card-label">Practice</span>
+              <span class="landing-card-desc">Séance libre ou recommandée</span>
+            </span>
+            <span class="landing-card-chev">›</span>
+          </button>
+        </div>
+      </div>
+      <div class="btn-row" style="margin-top:18px">
+        <button class="btn" id="btn-refresh-app">🔄 Actualiser l'app</button>
+      </div>
+      <p class="footnote" id="app-version-footnote"></p>
+      <p class="footnote">Fonctionne hors-ligne · les données restent sur ce téléphone jusqu'à export.</p>
+    </section>
+
+    <!-- ============================= ROUNDS ============================= -->
+    <section id="screen-home" class="screen">
+      <h1>Rounds</h1>
       <div class="btn-row">
         <button class="btn btn-primary" id="btn-new-round">+ Nouvelle carte</button>
       </div>
       <div class="btn-row" style="margin-top:8px">
         <button class="btn" id="btn-manage-courses">Mes parcours</button>
-        <button class="btn" id="btn-practice">Practice</button>
         <button class="btn" id="btn-export">Exporter</button>
       </div>
 
@@ -56,12 +91,6 @@
 
       <h3>Déjà exportées</h3>
       <div class="card" id="list-exported"><div class="empty"><span class="flag">✅</span>—</div></div>
-
-      <div class="btn-row" style="margin-top:18px">
-        <button class="btn" id="btn-refresh-app">🔄 Actualiser l'app</button>
-      </div>
-      <p class="footnote" id="app-version-footnote"></p>
-      <p class="footnote">Fonctionne hors-ligne · les données restent sur ce téléphone jusqu'à export.</p>
     </section>
 
     <!-- ============================= PARCOURS (liste) ============================= -->

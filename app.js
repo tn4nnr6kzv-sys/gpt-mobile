@@ -69,7 +69,7 @@
   // incrémenter cette valeur ET le CACHE_NAME de sw.js à l'identique (ex. ici "v1.8.0" ->
   // cache "golftracker-mobile-1.8.0"). Changer le nom du cache est ce qui force la purge et
   // garantit que la nouvelle version s'installe proprement.
-  var APP_BUILD = "v1.12.0";
+  var APP_BUILD = "v1.13.0";
 
   var LS_COURSES = "gtm_courses_v1";
   var LS_ROUNDS = "gtm_rounds_v1";
@@ -128,7 +128,7 @@
   // ------------------------------------------------------------------
   // Navigation
   // ------------------------------------------------------------------
-  var screens = ["home", "courses", "course-form", "round-setup", "hole", "finish", "export", "practice", "practice-form"];
+  var screens = ["landing", "home", "courses", "course-form", "round-setup", "hole", "finish", "export", "practice", "practice-form"];
 
   // Critères de sensations notés en fin de carte (ordre = ordre d'affichage).
   // Chaque critère est noté : "pos" (positif), "neu" (neutre), "neg" (négatif) ou null (non noté).
@@ -153,16 +153,52 @@
     screens.forEach(function (s) {
       document.getElementById("screen-" + s).classList.toggle("active", s === name);
     });
-    document.getElementById("btn-back").style.visibility = name === "home" ? "hidden" : "visible";
+    // Écran racine (landing) et écrans « hub » (rounds, practice) : pas de bouton retour, ils
+    // sont à un saut de l'accueil. L'icône maison ne sert qu'à revenir à l'accueil depuis ces
+    // deux hubs — inutile sur l'accueil lui-même ou sur les sous-écrans (qui ont déjà « Retour »).
+    var isHub = (name === "home" || name === "practice");
+    document.getElementById("btn-back").style.visibility = (name === "landing" || isHub) ? "hidden" : "visible";
+    document.getElementById("btn-home").style.visibility = isHub ? "visible" : "hidden";
     if (!opts.skipHistory) history.push(name);
     window.scrollTo(0, 0);
   }
 
   document.getElementById("btn-back").addEventListener("click", function () {
     history.pop(); // écran courant
-    var prev = history.pop() || "home";
+    var prev = history.pop() || "landing";
     showScreen(prev);
   });
+
+  document.getElementById("btn-home").addEventListener("click", function () {
+    showScreen("landing", { skipHistory: true });
+    history = ["landing"];
+  });
+
+  document.getElementById("btn-go-rounds").addEventListener("click", function () {
+    renderHome(); showScreen("home");
+  });
+  document.getElementById("btn-go-practice").addEventListener("click", function () {
+    renderPracticeHome(); showScreen("practice");
+  });
+
+  // Petites particules dorées ambiantes sur l'écran d'accueil (version allégée et continue du
+  // scintillement du splash — pas de séquence d'entrée/sortie, juste une boucle discrète).
+  (function initLandingSparkles() {
+    var host = document.getElementById("landing-sparkles");
+    if (!host) return;
+    var N = 8;
+    for (var i = 0; i < N; i++) {
+      var s = document.createElement("span");
+      s.className = "spark";
+      s.style.left = (8 + Math.random() * 84) + "%";
+      s.style.setProperty("--dur", (3 + Math.random() * 2).toFixed(2) + "s");
+      s.style.setProperty("--delay", (Math.random() * 3).toFixed(2) + "s");
+      s.style.setProperty("--rise", (120 + Math.random() * 60) + "px");
+      var sz = (3.5 + Math.random() * 3).toFixed(1);
+      s.style.width = sz + "px"; s.style.height = sz + "px";
+      host.appendChild(s);
+    }
+  })();
 
   function toast(msg) {
     var t = document.getElementById("toast");
@@ -254,9 +290,6 @@
     openRoundSetup(); showScreen("round-setup");
   });
   document.getElementById("btn-export").addEventListener("click", exportRounds);
-  document.getElementById("btn-practice").addEventListener("click", function () {
-    renderPracticeHome(); showScreen("practice");
-  });
 
   // ------------------------------------------------------------------
   // PRACTICE — liste & formulaire
@@ -475,7 +508,7 @@
     toast("Séance de practice enregistrée.");
     currentPracticeId = null;
     showScreen("practice", { skipHistory: true });
-    history = ["home", "practice"];
+    history = ["landing", "practice"];
     renderPracticeHome();
   });
 
