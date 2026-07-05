@@ -105,6 +105,7 @@ p.micro { font-size: 12.5px; color: var(--ink-soft); line-height: 1.5; margin: 6
 .empty .flag { font-size: 34px; display: block; margin-bottom: 8px; }
 
 .field { display: block; margin-bottom: 12px; }
+.lab { display: block; font-size: 12.5px; color: var(--ink-soft); font-weight: 600; margin-bottom: 4px; }
 .field span.lab { display: block; font-size: 12.5px; color: var(--ink-soft); margin-bottom: 5px; font-weight: 600; }
 .field input[type=text], .field input[type=date], .field input[type=number], .field select, .field textarea {
   width: 100%; font-size: 16px; padding: 11px 12px; border-radius: 10px;
@@ -247,6 +248,22 @@ details.collapse[open] summary::before { content: "▾ "; }
 }
 .strategy-note .sn-icon { flex: 0 0 auto; }
 .strategy-note .sn-edit { flex: 0 0 auto; background: none; border: none; color: #6b5416; text-decoration: underline; font-size: 12.5px; padding: 0; }
+
+/* ----- Sections chronologiques de l'écran de saisie du trou (Départ / Approche / Putting /
+   Résultat) : un repère numéroté + une icône pour suivre visuellement le déroulé réel du trou,
+   plutôt qu'une liste de champs sans lien apparent. ------------------------------------------ */
+.hole-section { margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--line); }
+.hole-section:first-of-type { margin-top: 16px; }
+.hole-section-head {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+  font-family: var(--serif); font-size: 15.5px; color: var(--green-deep);
+}
+.hs-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 50%; background: var(--green-deep); color: #fff;
+  font-family: var(--sans); font-size: 11px; font-weight: 700; flex: none;
+}
+.hs-icon { font-size: 16px; flex: none; }
 
 /* ===== Écran de clôture de carte ===== */
 .finish-times { display: flex; gap: 10px; }

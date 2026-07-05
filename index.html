@@ -226,60 +226,14 @@
 
         <div id="h-strategy-note" class="strategy-note" style="display:none"></div>
 
-        <span class="lab" style="display:block;margin-bottom:4px;font-size:12.5px;color:var(--ink-soft);font-weight:600">Score</span>
-        <div class="stepper" id="st-score">
-          <button data-d="-1">−</button><span class="val" id="v-score">4</span><button data-d="1">+</button>
-        </div>
+        <!-- ① DÉPART ---------------------------------------------------- -->
+        <div class="hole-section">
+          <div class="hole-section-head"><span class="hs-num">1</span><span class="hs-icon">⛳</span>Départ</div>
 
-        <span class="lab" style="display:block;margin:14px 0 4px;font-size:12.5px;color:var(--ink-soft);font-weight:600">Putts</span>
-        <div class="stepper" id="st-putts">
-          <button data-d="-1">−</button><span class="val" id="v-putts">2</span><button data-d="1">+</button>
-        </div>
-
-        <div id="fairway-block">
-          <span class="lab" style="display:block;margin:14px 0 4px;font-size:12.5px;color:var(--ink-soft);font-weight:600">Fairway</span>
-          <div class="opt-row" id="opt-fairway">
-            <button class="opt-btn" data-v="hit">Touché</button>
-            <button class="opt-btn" data-v="miss">Manqué</button>
-          </div>
-        </div>
-
-        <span class="lab" style="display:block;margin:14px 0 4px;font-size:12.5px;color:var(--ink-soft);font-weight:600">Green en régulation (GIR)</span>
-        <div class="opt-row" id="opt-gir">
-          <button class="opt-btn" data-v="1">Oui</button>
-          <button class="opt-btn" data-v="0">Non</button>
-        </div>
-
-        <span class="lab" style="display:block;margin:14px 0 4px;font-size:12.5px;color:var(--ink-soft);font-weight:600">Pénalités</span>
-        <div class="stepper" id="st-pen">
-          <button data-d="-1">−</button><span class="val" id="v-pen">0</span><button data-d="1">+</button>
-        </div>
-
-        <details class="collapse" id="gps-details">
-          <summary>Plus de détails (1er putt, up&amp;down, bunker, club de départ)</summary>
-          <label class="field"><span class="lab">Distance du 1er putt (pieds)</span>
-            <input type="number" inputmode="decimal" id="h-fpd" placeholder="ex. 15"></label>
-
-          <span class="lab" style="display:block;margin-bottom:4px">Up &amp; down (si green manqué)</span>
-          <div class="opt-row" id="opt-updown">
-            <button class="opt-btn" data-v="">Non tenté</button>
-            <button class="opt-btn" data-v="att">Tenté, raté</button>
-            <button class="opt-btn" data-v="ok">Réussi</button>
-          </div>
-
-          <span class="lab" style="display:block;margin:12px 0 4px">Sortie de bunker</span>
-          <div class="opt-row" id="opt-sand">
-            <button class="opt-btn" data-v="">Non tenté</button>
-            <button class="opt-btn" data-v="att">Tenté, raté</button>
-            <button class="opt-btn" data-v="ok">Réussi</button>
-          </div>
-
-          <label class="field" style="margin-top:12px"><span class="lab">Club au départ</span>
+          <label class="field"><span class="lab">Club au départ</span>
             <select id="h-club"><option value="">—</option></select></label>
-          <label class="field"><span class="lab">Distance du drive (m)</span>
-            <input type="number" inputmode="numeric" id="h-drivedist" placeholder="ex. 210"></label>
 
-          <span class="lab" style="display:block;margin-top:12px">Forme du tee shot</span>
+          <span class="lab" style="display:block;margin:10px 0 4px">Forme du tee shot</span>
           <div class="opt-row opt-row-wrap" id="opt-teeshape">
             <button class="opt-btn" data-v="straight">Droit</button>
             <button class="opt-btn" data-v="draw">Draw</button>
@@ -288,21 +242,88 @@
             <button class="opt-btn" data-v="slice">Slice</button>
           </div>
 
-          <span class="lab" style="display:block;margin-top:12px">Profondeur du drapeau</span>
+          <label class="field" style="margin-top:10px"><span class="lab">Distance du drive (m)</span>
+            <input type="number" inputmode="numeric" id="h-drivedist" placeholder="ex. 210"></label>
+
+          <div id="fairway-block">
+            <span class="lab" style="display:block;margin-top:10px">Fairway</span>
+            <div class="opt-row" id="opt-fairway">
+              <button class="opt-btn" data-v="hit">Touché</button>
+              <button class="opt-btn" data-v="miss">Manqué</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ② APPROCHE & GREEN ------------------------------------------ -->
+        <div class="hole-section">
+          <div class="hole-section-head"><span class="hs-num">2</span><span class="hs-icon">🎯</span>Approche &amp; green</div>
+
+          <span class="lab" style="display:block;margin-bottom:4px">Green en régulation (GIR)</span>
+          <div class="opt-row" id="opt-gir">
+            <button class="opt-btn" data-v="1">Oui</button>
+            <button class="opt-btn" data-v="0">Non</button>
+          </div>
+
+          <span class="lab" style="display:block;margin:10px 0 4px">Profondeur du drapeau</span>
           <div class="opt-row" id="opt-pindepth">
             <button class="opt-btn" data-v="front">Entrée</button>
             <button class="opt-btn" data-v="middle">Milieu</button>
             <button class="opt-btn" data-v="back">Fond</button>
           </div>
 
-          <span class="lab" style="display:block;margin-top:12px">Position du drapeau</span>
+          <span class="lab" style="display:block;margin:10px 0 4px">Position du drapeau</span>
           <div class="opt-row" id="opt-pinside">
             <button class="opt-btn" data-v="left">Gauche</button>
             <button class="opt-btn" data-v="center">Centre</button>
             <button class="opt-btn" data-v="right">Droite</button>
           </div>
 
-          <h3>Log GPS des coups <small style="font-weight:400;color:var(--ink-soft)">(optionnel)</small></h3>
+          <span class="lab" style="display:block;margin:10px 0 4px">Sortie de bunker</span>
+          <div class="opt-row" id="opt-sand">
+            <button class="opt-btn" data-v="">Non tenté</button>
+            <button class="opt-btn" data-v="att">Tenté, raté</button>
+            <button class="opt-btn" data-v="ok">Réussi</button>
+          </div>
+
+          <span class="lab" style="display:block;margin:10px 0 4px">Up &amp; down (si green manqué)</span>
+          <div class="opt-row" id="opt-updown">
+            <button class="opt-btn" data-v="">Non tenté</button>
+            <button class="opt-btn" data-v="att">Tenté, raté</button>
+            <button class="opt-btn" data-v="ok">Réussi</button>
+          </div>
+        </div>
+
+        <!-- ③ PUTTING ----------------------------------------------------- -->
+        <div class="hole-section">
+          <div class="hole-section-head"><span class="hs-num">3</span><span class="hs-icon">🏌️</span>Putting</div>
+
+          <span class="lab" style="display:block;margin-bottom:4px">Putts</span>
+          <div class="stepper" id="st-putts">
+            <button data-d="-1">−</button><span class="val" id="v-putts">2</span><button data-d="1">+</button>
+          </div>
+
+          <label class="field" style="margin-top:10px"><span class="lab">Distance du 1er putt (pieds)</span>
+            <input type="number" inputmode="decimal" id="h-fpd" placeholder="ex. 15"></label>
+        </div>
+
+        <!-- ④ RÉSULTAT ------------------------------------------------- -->
+        <div class="hole-section">
+          <div class="hole-section-head"><span class="hs-num">4</span><span class="hs-icon">🏁</span>Résultat</div>
+
+          <span class="lab" style="display:block;margin-bottom:4px">Score</span>
+          <div class="stepper" id="st-score">
+            <button data-d="-1">−</button><span class="val" id="v-score">4</span><button data-d="1">+</button>
+          </div>
+
+          <span class="lab" style="display:block;margin:10px 0 4px">Pénalités</span>
+          <div class="stepper" id="st-pen">
+            <button data-d="-1">−</button><span class="val" id="v-pen">0</span><button data-d="1">+</button>
+          </div>
+        </div>
+
+        <!-- LOG GPS AVANCÉ (replié) --------------------------------------- -->
+        <details class="collapse" id="gps-details">
+          <summary>📍 Log GPS coup par coup <small style="font-weight:400;color:var(--ink-soft)">(optionnel, en direct sur le parcours)</small></summary>
           <p class="micro">Marque ta position à chaque coup avant de jouer (départ, fairway, rough,
              bunker…), puis le drapeau une fois sur le green. La distance de chaque coup et le
              strokes gained (départ/approche/petit jeu) seront calculés automatiquement à l'export —
