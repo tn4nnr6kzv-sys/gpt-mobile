@@ -44,6 +44,7 @@
       </div>
       <div class="btn-row" style="margin-top:8px">
         <button class="btn" id="btn-manage-courses">Mes parcours</button>
+        <button class="btn" id="btn-practice">Practice</button>
         <button class="btn" id="btn-export">Exporter</button>
       </div>
 
@@ -338,9 +339,50 @@
       </div>
     </section>
 
+    <!-- ============================= PRACTICE (liste) ============================= -->
+    <section id="screen-practice" class="screen">
+      <h1>Practice</h1>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btn-new-practice">+ Nouvelle séance</button>
+      </div>
+
+      <h3>À exporter</h3>
+      <div class="card" id="list-practice-ready"><div class="empty"><span class="flag">🏌️</span>Aucune séance enregistrée.</div></div>
+
+      <h3>Déjà exportées</h3>
+      <div class="card" id="list-practice-exported"><div class="empty"><span class="flag">✅</span>—</div></div>
+    </section>
+
+    <!-- ============================= PRACTICE (formulaire) ============================= -->
+    <section id="screen-practice-form" class="screen">
+      <h1 id="practice-form-title">Nouvelle séance</h1>
+
+      <label class="field"><span class="lab">Date</span>
+        <input type="date" id="pf-date"></label>
+      <label class="field"><span class="lab">Durée (minutes)</span>
+        <input type="number" inputmode="numeric" id="pf-duration" placeholder="ex. 45"></label>
+      <label class="field"><span class="lab">Focus du jour</span>
+        <input type="text" id="pf-focus" placeholder="Ex. wedges + putting"></label>
+      <label class="field"><span class="lab">Notes</span>
+        <textarea id="pf-notes" rows="2" placeholder="Ressenti, point technique travaillé…"></textarea></label>
+
+      <h3>Exercices</h3>
+      <p class="micro">Un exercice = une zone (putting, bunker…), le nombre de tentatives/réussites,
+         et éventuellement une distance et une note de ressenti /5.</p>
+      <div id="pf-exercises"></div>
+      <div class="btn-row" style="margin-top:8px">
+        <button type="button" class="btn" id="btn-add-exercise">+ Ajouter un exercice</button>
+      </div>
+
+      <div class="hole-nav" style="margin-top:18px">
+        <button class="btn" id="btn-practice-cancel">Annuler</button>
+        <button class="btn btn-primary" id="btn-save-practice">Enregistrer la séance</button>
+      </div>
+    </section>
+
     <!-- ============================= EXPORT ============================= -->
     <section id="screen-export" class="screen">
-      <h1>Exporter tes cartes</h1>
+      <h1>Exporter tes données</h1>
       <p class="micro" id="export-intro"></p>
 
       <div class="card">
@@ -370,7 +412,7 @@
       <div class="btn-row" style="margin-top:16px">
         <button class="btn btn-primary" id="btn-confirm-exported">✓ J'ai récupéré mes données</button>
       </div>
-      <p class="micro">Marque les cartes comme exportées une fois que tu es sûr d'avoir bien
+      <p class="micro">Marque les cartes et séances comme exportées une fois que tu es sûr d'avoir bien
          transféré tes données (copié-collé, partagé ou téléchargé) — ça ne les supprime pas, elles
          restent visibles dans « Déjà exportées » et tu peux toujours les effacer manuellement.</p>
     </section>

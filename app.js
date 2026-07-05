@@ -69,16 +69,24 @@
   // incrémenter cette valeur ET le CACHE_NAME de sw.js à l'identique (ex. ici "v1.8.0" ->
   // cache "golftracker-mobile-1.8.0"). Changer le nom du cache est ce qui force la purge et
   // garantit que la nouvelle version s'installe proprement.
-  var APP_BUILD = "v1.10.1";
+  var APP_BUILD = "v1.11.0";
 
   var LS_COURSES = "gtm_courses_v1";
   var LS_ROUNDS = "gtm_rounds_v1";
+  var LS_PRACTICE = "gtm_practice_v1";
 
   var TEE_CLUBS = [
     "Driver", "Bois 3", "Bois 5", "Bois 7", "Hybride",
     "Fer 3", "Fer 4", "Fer 5", "Fer 6", "Fer 7", "Fer 8", "Fer 9",
     "Pitching", "Wedge",
   ];
+
+  // Mêmes zones que le desktop (analytics.ZONES / ZONE_LABELS) — à garder synchronisé.
+  var ZONES = ["putting", "chipping", "pitching", "bunker", "approach", "driving"];
+  var ZONE_LABELS = {
+    putting: "Putting", chipping: "Chipping", pitching: "Pitching",
+    bunker: "Bunker", approach: "Approche (wedges/fers)", driving: "Driving / grand jeu",
+  };
 
   // ------------------------------------------------------------------
   // Stockage
@@ -95,6 +103,12 @@
   }
   function saveRounds(r) { localStorage.setItem(LS_ROUNDS, JSON.stringify(r)); }
 
+  function loadPractice() {
+    try { return JSON.parse(localStorage.getItem(LS_PRACTICE)) || []; }
+    catch (e) { return []; }
+  }
+  function savePractice(p) { localStorage.setItem(LS_PRACTICE, JSON.stringify(p)); }
+
   function uid(prefix) {
     return prefix + "_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 7);
   }
@@ -107,7 +121,7 @@
   // ------------------------------------------------------------------
   // Navigation
   // ------------------------------------------------------------------
-  var screens = ["home", "courses", "course-form", "round-setup", "hole", "finish", "export"];
+  var screens = ["home", "courses", "course-form", "round-setup", "hole", "finish", "export", "practice", "practice-form"];
 
   // Critères de sensations notés en fin de carte (ordre = ordre d'affichage).
   // Chaque critère est noté : "pos" (positif), "neu" (neutre), "neg" (négatif) ou null (non noté).
@@ -228,6 +242,175 @@
     openRoundSetup(); showScreen("round-setup");
   });
   document.getElementById("btn-export").addEventListener("click", exportRounds);
+  document.getElementById("btn-practice").addEventListener("click", function () {
+    renderPracticeHome(); showScreen("practice");
+  });
+
+  // ------------------------------------------------------------------
+  // PRACTICE — liste & formulaire
+  // ------------------------------------------------------------------
+  function renderPracticeHome() {
+    var sessions = loadPractice().sort(function (a, b) { return (b.date || "").localeCompare(a.date || ""); });
+    var groups = { ready: [], exported: [] };
+    sessions.forEach(function (s) { (groups[s.status] || groups.ready).push(s); });
+
+    function renderList(el, list, emptyIcon, emptyText) {
+      if (!list.length) {
+        el.innerHTML = '<div class="empty"><span class="flag">' + emptyIcon + '</span>' + emptyText + '</div>';
+        return;
+      }
+      el.innerHTML = "";
+      list.forEach(function (s) {
+        var nEx = (s.exercises || []).length;
+        var div = document.createElement("div");
+        div.className = "list-item";
+        div.innerHTML =
+          '<div class="li-main">' +
+            '<div class="li-title">' + escapeHtml(s.focus || "Séance de practice") + '</div>' +
+            '<div class="li-sub">' + s.date + (s.duration_min ? ' · ' + s.duration_min + ' min' : '') +
+              ' · ' + nEx + ' exercice' + (nEx > 1 ? 's' : '') + '</div>' +
+          '</div>' +
+          '<button type="button" class="li-del" data-id="' + s.id + '" title="Supprimer">🗑</button>' +
+          '<span class="li-chev">›</span>';
+        div.querySelector(".li-main").addEventListener("click", function () {
+          openPracticeForm(s.id); showScreen("practice-form");
+        });
+        div.querySelector(".li-chev").addEventListener("click", function () {
+          openPracticeForm(s.id); showScreen("practice-form");
+        });
+        div.querySelector(".li-del").addEventListener("click", function (e) {
+          e.stopPropagation();
+          if (!window.confirm("Supprimer définitivement cette séance (" + s.date +
+              ") ? Cette action est irréversible.")) return;
+          var all = loadPractice().filter(function (x) { return x.id !== s.id; });
+          savePractice(all);
+          renderPracticeHome();
+        });
+        el.appendChild(div);
+      });
+    }
+    renderList(document.getElementById("list-practice-ready"), groups.ready, "🏌️", "Aucune séance enregistrée.");
+    renderList(document.getElementById("list-practice-exported"), groups.exported, "✅", "—");
+  }
+
+  var currentPracticeId = null;
+
+  function addExerciseRow(ex) {
+    ex = ex || {};
+    var wrap = document.getElementById("pf-exercises");
+    var zoneOpts = ZONES.map(function (z) {
+      return '<option value="' + z + '"' + (ex.zone === z ? " selected" : "") + '>' + ZONE_LABELS[z] + '</option>';
+    }).join("");
+    var ratingOpts = '<option value="">–</option>' + [1, 2, 3, 4, 5].map(function (r) {
+      return '<option value="' + r + '"' + (ex.rating === r ? " selected" : "") + '>' + r + '</option>';
+    }).join("");
+    var div = document.createElement("div");
+    div.className = "card ex-card";
+    div.innerHTML =
+      '<div class="btn-row" style="justify-content:space-between;align-items:center;margin-bottom:6px">' +
+        '<strong>Exercice</strong>' +
+        '<button type="button" class="li-del ex-remove" title="Supprimer cet exercice">🗑</button>' +
+      '</div>' +
+      '<label class="field"><span class="lab">Zone</span><select class="ex-zone">' + zoneOpts + '</select></label>' +
+      '<label class="field"><span class="lab">Nom de l\'exercice</span>' +
+        '<input type="text" class="ex-name" value="' + escapeHtml(ex.name || "") + '" placeholder="Ex. Ladder Drill"></label>' +
+      '<div class="grid-2">' +
+        '<label class="field"><span class="lab">Tentatives</span>' +
+          '<input type="number" inputmode="numeric" class="ex-attempts" value="' + (ex.attempts != null ? ex.attempts : "") + '"></label>' +
+        '<label class="field"><span class="lab">Réussites</span>' +
+          '<input type="number" inputmode="numeric" class="ex-successes" value="' + (ex.successes != null ? ex.successes : "") + '"></label>' +
+      '</div>' +
+      '<div class="grid-2">' +
+        '<label class="field"><span class="lab">Distance</span>' +
+          '<input type="text" class="ex-distance" value="' + escapeHtml(ex.distance || "") + '" placeholder="ex. 60-80m"></label>' +
+        '<label class="field"><span class="lab">Note /5</span><select class="ex-rating">' + ratingOpts + '</select></label>' +
+      '</div>' +
+      '<label class="field"><span class="lab">Notes</span>' +
+        '<input type="text" class="ex-notes" value="' + escapeHtml(ex.notes || "") + '"></label>';
+    div.querySelector(".ex-remove").addEventListener("click", function () { div.remove(); });
+    wrap.appendChild(div);
+  }
+
+  function openPracticeForm(id) {
+    currentPracticeId = id || null;
+    var s = id ? loadPractice().find(function (x) { return x.id === id; }) : null;
+    document.getElementById("practice-form-title").textContent = s ? "Modifier la séance" : "Nouvelle séance";
+    document.getElementById("pf-date").value = (s && s.date) || todayISO();
+    document.getElementById("pf-duration").value = (s && s.duration_min != null) ? s.duration_min : "";
+    document.getElementById("pf-focus").value = (s && s.focus) || "";
+    document.getElementById("pf-notes").value = (s && s.notes) || "";
+    var wrap = document.getElementById("pf-exercises");
+    wrap.innerHTML = "";
+    if (s && s.exercises && s.exercises.length) {
+      s.exercises.forEach(function (ex) { addExerciseRow(ex); });
+    } else {
+      addExerciseRow();
+    }
+  }
+
+  document.getElementById("btn-new-practice").addEventListener("click", function () {
+    openPracticeForm(null); showScreen("practice-form");
+  });
+  document.getElementById("btn-add-exercise").addEventListener("click", function () { addExerciseRow(); });
+  document.getElementById("btn-practice-cancel").addEventListener("click", function () {
+    showScreen("practice", { skipHistory: true });
+  });
+
+  document.getElementById("btn-save-practice").addEventListener("click", function () {
+    var date = document.getElementById("pf-date").value || todayISO();
+    var duration = document.getElementById("pf-duration").value;
+    var focus = document.getElementById("pf-focus").value.trim();
+    var notes = document.getElementById("pf-notes").value.trim();
+    var exercises = [];
+    document.querySelectorAll("#pf-exercises .ex-card").forEach(function (card) {
+      var zone = card.querySelector(".ex-zone").value;
+      var name = card.querySelector(".ex-name").value.trim();
+      var attempts = card.querySelector(".ex-attempts").value;
+      var successes = card.querySelector(".ex-successes").value;
+      var distance = card.querySelector(".ex-distance").value.trim();
+      var rating = card.querySelector(".ex-rating").value;
+      var exnotes = card.querySelector(".ex-notes").value.trim();
+      // Ignore une ligne totalement vide (exercice ajouté puis pas rempli).
+      if (!name && !attempts && !successes && !distance && !rating && !exnotes) return;
+      exercises.push({
+        zone: zone, name: name || null,
+        attempts: attempts !== "" ? parseInt(attempts, 10) : null,
+        successes: successes !== "" ? parseInt(successes, 10) : null,
+        distance: distance || null,
+        rating: rating !== "" ? parseInt(rating, 10) : null,
+        notes: exnotes || null,
+      });
+    });
+    if (!exercises.length) {
+      toast("Ajoute au moins un exercice avant d'enregistrer.");
+      return;
+    }
+    var all = loadPractice();
+    if (currentPracticeId) {
+      var idx = all.findIndex(function (x) { return x.id === currentPracticeId; });
+      if (idx !== -1) {
+        all[idx].date = date;
+        all[idx].duration_min = duration !== "" ? parseInt(duration, 10) : null;
+        all[idx].focus = focus || null;
+        all[idx].notes = notes || null;
+        all[idx].exercises = exercises;
+        // Le statut existant est conservé : modifier une séance déjà exportée ne la fait pas
+        // redescendre dans « à exporter » (comme pour les cartes de golf côté rounds).
+      }
+    } else {
+      all.push({
+        id: uid("pr"), date: date,
+        duration_min: duration !== "" ? parseInt(duration, 10) : null,
+        focus: focus || null, notes: notes || null, exercises: exercises, status: "ready",
+      });
+    }
+    savePractice(all);
+    toast("Séance de practice enregistrée.");
+    currentPracticeId = null;
+    showScreen("practice", { skipHistory: true });
+    history = ["home", "practice"];
+    renderPracticeHome();
+  });
 
   // ------------------------------------------------------------------
   // PARCOURS — liste & formulaire
@@ -1159,14 +1342,17 @@
   // EXPORT
   // ------------------------------------------------------------------
   var pendingExportRounds = [];
+  var pendingExportPractice = [];
 
   function exportRounds() {
     var rounds = loadRounds().filter(function (r) { return r.status === "ready"; });
-    if (!rounds.length) {
-      toast("Aucune carte prête à exporter (termine une carte d'abord).");
+    var practice = loadPractice().filter(function (p) { return p.status === "ready"; });
+    if (!rounds.length && !practice.length) {
+      toast("Rien à exporter pour l'instant (termine une carte ou enregistre une séance de practice).");
       return;
     }
     pendingExportRounds = rounds;
+    pendingExportPractice = practice;
     var payload = {
       app: "golf-tracker-mobile", version: "1.0",
       exported_at: new Date().toISOString(),
@@ -1224,10 +1410,23 @@
           }),
         };
       }),
+      practice_sessions: practice.map(function (p) {
+        return {
+          date: p.date, duration_min: p.duration_min, focus: p.focus, notes: p.notes,
+          exercises: (p.exercises || []).map(function (ex) {
+            return {
+              zone: ex.zone, name: ex.name, attempts: ex.attempts, successes: ex.successes,
+              distance: ex.distance, rating: ex.rating, notes: ex.notes,
+            };
+          }),
+        };
+      }),
     };
     var json = JSON.stringify(payload, null, 2);
-    document.getElementById("export-intro").textContent =
-      rounds.length + " carte(s) prête(s) à exporter.";
+    var introParts = [];
+    if (rounds.length) introParts.push(rounds.length + " carte(s)");
+    if (practice.length) introParts.push(practice.length + " séance(s) de practice");
+    document.getElementById("export-intro").textContent = introParts.join(" et ") + " prête(s) à exporter.";
     document.getElementById("export-json-text").value = json;
     document.getElementById("copy-status").textContent = "";
     showScreen("export");
@@ -1271,13 +1470,21 @@
   });
 
   document.getElementById("btn-confirm-exported").addEventListener("click", function () {
-    if (!pendingExportRounds.length) { showScreen("home"); return; }
-    var ids = pendingExportRounds.map(function (r) { return r.id; });
-    var all = loadRounds();
-    all.forEach(function (r) { if (ids.indexOf(r.id) !== -1) r.status = "exported"; });
-    saveRounds(all);
-    toast(pendingExportRounds.length + " carte(s) marquée(s) comme exportées.");
+    if (!pendingExportRounds.length && !pendingExportPractice.length) { showScreen("home"); return; }
+    var roundIds = pendingExportRounds.map(function (r) { return r.id; });
+    var allRounds = loadRounds();
+    allRounds.forEach(function (r) { if (roundIds.indexOf(r.id) !== -1) r.status = "exported"; });
+    saveRounds(allRounds);
+
+    var practiceIds = pendingExportPractice.map(function (p) { return p.id; });
+    var allPractice = loadPractice();
+    allPractice.forEach(function (p) { if (practiceIds.indexOf(p.id) !== -1) p.status = "exported"; });
+    savePractice(allPractice);
+
+    var n = pendingExportRounds.length + pendingExportPractice.length;
+    toast(n + " élément(s) marqué(s) comme exporté(s).");
     pendingExportRounds = [];
+    pendingExportPractice = [];
     showScreen("home", { skipHistory: true });
     history = ["home"];
     renderHome();
