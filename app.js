@@ -69,7 +69,7 @@
   // incrémenter cette valeur ET le CACHE_NAME de sw.js à l'identique (ex. ici "v1.8.0" ->
   // cache "golftracker-mobile-1.8.0"). Changer le nom du cache est ce qui force la purge et
   // garantit que la nouvelle version s'installe proprement.
-  var APP_BUILD = "v1.17.0";
+  var APP_BUILD = "v1.18.0";
 
   var LS_COURSES = "gtm_courses_v1";
   var LS_ROUNDS = "gtm_rounds_v1";
@@ -928,6 +928,23 @@
     return 2 * R * Math.asin(Math.sqrt(h));
   }
 
+  // Décalage latéral (en mètres) d'un point par rapport à l'axe droit départ -> drapeau : positif
+  // = à droite de cet axe (vu depuis le départ), négatif = à gauche, 0 = pile sur la ligne.
+  // Projection équirectangulaire locale centrée sur le départ — largement suffisante à l'échelle
+  // d'un trou de golf (quelques centaines de mètres), pas besoin d'une projection plus complexe.
+  function lateralOffsetMeters(tee, pin, point) {
+    if (!tee || !pin || point.lat == null || point.lon == null) return null;
+    var toRad = function (d) { return (d * Math.PI) / 180; };
+    var mPerDegLat = 110540;
+    var mPerDegLon = 111320 * Math.cos(toRad(tee.lat));
+    function toXY(p) { return { x: (p.lon - tee.lon) * mPerDegLon, y: (p.lat - tee.lat) * mPerDegLat }; }
+    var P = toXY(pin), S = toXY(point);
+    var lenSq = P.x * P.x + P.y * P.y;
+    if (lenSq < 1e-6) return null; // départ et drapeau au même endroit (marquage incohérent)
+    var cross = S.x * P.y - S.y * P.x;
+    return cross / Math.sqrt(lenSq);
+  }
+
   function captureGPS(cb) {
     if (!navigator.geolocation) { toast("GPS non disponible sur cet appareil."); return; }
     toast("Localisation en cours…");
@@ -1526,7 +1543,11 @@
                   : (h.pin ? haversineMeters(s, h.pin) : null);
                 if (distM == null) return null; // ni correction manuelle, ni drapeau connu
                 var distYd = distM / M_PER_YD;
-                return { lie: s.lie, distance: Math.round(distYd * 10) / 10, club: s.club || null, holed: null };
+                var lat = (h.tee_mark && h.pin) ? lateralOffsetMeters(h.tee_mark, h.pin, s) : null;
+                return {
+                  lie: s.lie, distance: Math.round(distYd * 10) / 10, club: s.club || null, holed: null,
+                  lateral_m: lat != null ? Math.round(lat * 10) / 10 : null,
+                };
               }).filter(function (x) { return x !== null; });
             }
             if (h.green_mark && arr.length) {
