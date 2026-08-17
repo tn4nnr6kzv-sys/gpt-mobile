@@ -449,3 +449,48 @@ details.collapse[open] summary::before { content: "▾ "; }
 .landing-card-label { font-family: var(--serif); font-size: 16.5px; }
 .landing-card-desc { font-size: 12px; color: #cfe0d4; margin-top: 2px; }
 .landing-card-chev { font-size: 20px; color: #cfe0d4; flex: none; }
+
+/* ============ Aperçu permanent du score (feature #4) ============ */
+.score-overview {
+  position: sticky;
+  top: var(--safe-top);
+  z-index: 20;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 8px 14px;
+  margin: 0 0 8px;
+  background: var(--green-deep);
+  color: #fff;
+  border-radius: 0 0 var(--radius) var(--radius);
+  box-shadow: 0 2px 10px rgba(0,0,0,.18);
+}
+.score-overview .so-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  opacity: .8;
+}
+.score-overview .so-value {
+  font-family: var(--mono);
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+}
+.score-overview .so-value.over  { color: #f2b8b2; }   /* au-dessus du par : rougeâtre clair */
+.score-overview .so-value.under { color: #a9e5c4; }   /* sous le par : verdâtre clair */
+.score-overview .so-value.even  { color: #fff; }
+.score-overview .so-sub {
+  margin-left: auto;
+  font-size: 12px;
+  opacity: .75;
+}
+
+/* ============ Coches vertes de marquage (feature #3) ============ */
+.mark-check {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+.mark-check:empty { display: none; }
+.mark-check .check-svg { display: block; }

@@ -69,7 +69,7 @@
   // incrémenter cette valeur ET le CACHE_NAME de sw.js à l'identique (ex. ici "v1.8.0" ->
   // cache "golftracker-mobile-1.8.0"). Changer le nom du cache est ce qui force la purge et
   // garantit que la nouvelle version s'installe proprement.
-  var APP_BUILD = "v1.18.0";
+  var APP_BUILD = "v1.19.0";
 
   var LS_COURSES = "gtm_courses_v1";
   var LS_ROUNDS = "gtm_rounds_v1";
@@ -261,6 +261,17 @@
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
     });
+  }
+
+  // Coche verte SVG affichée à côté d'un repère marqué (départ, drapeau, balle).
+  // set(elementId, marqué?) : injecte le SVG si marqué, vide sinon.
+  var CHECK_SVG = '<svg class="check-svg" viewBox="0 0 20 20" width="16" height="16" ' +
+    'aria-hidden="true"><circle cx="10" cy="10" r="9" fill="#2e7d46"/>' +
+    '<path d="M5.5 10.5l3 3 6-6.5" fill="none" stroke="#fff" stroke-width="2.2" ' +
+    'stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  function setMarkCheck(elementId, marked) {
+    var el = document.getElementById(elementId);
+    if (el) el.innerHTML = marked ? CHECK_SVG : "";
   }
 
   var LS_SERVER = "gtm_server_address_v1";
@@ -1022,25 +1033,29 @@
   function renderGpsSection() {
     var r = getRound(currentRoundId);
     var h = r.holes[r.current_index || 0];
-    var pinLabel = document.getElementById("gps-pin-label");
+    var pinLabel = document.getElementById("gps-pin-text");
     var pinSub = document.getElementById("gps-pin-sub");
     if (h.pin) {
       pinLabel.textContent = "🚩 Drapeau marqué";
+      setMarkCheck("pin-mark-check", true);
       pinSub.textContent = "précision ±" + h.pin.acc + " m — tape à nouveau pour le remplacer";
     } else {
       pinLabel.textContent = "Drapeau non marqué";
+      setMarkCheck("pin-mark-check", false);
       pinSub.textContent = (h.gps_shots || []).length
         ? "Les distances s'afficheront dès que le drapeau sera marqué."
         : "Marque-le une fois arrivé sur le green.";
     }
 
-    var greenLabel = document.getElementById("gps-green-label");
+    var greenLabel = document.getElementById("gps-green-text");
     var greenSub = document.getElementById("gps-green-sub");
     if (h.green_mark) {
       greenLabel.innerHTML = '<span class="golf-ball-icon"></span> Position sur le green marquée';
+      setMarkCheck("green-mark-check", true);
       greenSub.textContent = "précision ±" + h.green_mark.acc + " m — tape à nouveau pour le remplacer";
     } else {
       greenLabel.textContent = "Position sur le green non marquée";
+      setMarkCheck("green-mark-check", false);
       greenSub.textContent = "Marque où se trouve ta balle une fois sur le green — sert de repère pour préciser le coup précédent, pas un vrai coup joué.";
     }
 
@@ -1107,11 +1122,28 @@
 
   document.getElementById("btn-mark-tee").addEventListener("click", function () {
     captureGPS(function (pos) {
+      var club = document.getElementById("h-club").value || null;
       updateRound(currentRoundId, function (rr) {
-        rr.holes[rr.current_index || 0].tee_mark = pos;
+        var h = rr.holes[rr.current_index || 0];
+        h.tee_mark = pos;
+        // Auto-log du tee shot : la position du départ EST le premier coup du log
+        // coup par coup. On crée (ou met à jour) gps_shots[0] avec lie "tee" + le club
+        // saisi en section Départ, pour éviter une double saisie. Le flag _auto_tee
+        // marque ce coup comme généré automatiquement (re-synchronisable sans doublon).
+        h.gps_shots = h.gps_shots || [];
+        var teeShot = { lat: pos.lat, lng: pos.lng, acc: pos.acc, ts: pos.ts,
+                        lie: "tee", club: club, _auto_tee: true };
+        if (h.gps_shots.length && h.gps_shots[0]._auto_tee) {
+          // déjà un tee auto : on le remplace (nouvelle position / club)
+          h.gps_shots[0] = teeShot;
+        } else {
+          // pas encore de tee auto en tête : on l'insère en première position
+          h.gps_shots.unshift(teeShot);
+        }
       });
-      toast("Départ marqué (±" + pos.acc + " m).");
+      toast("Départ marqué et loggué (±" + pos.acc + " m).");
       renderTeeMark();
+      renderGpsSection();
     });
   });
 
@@ -1325,11 +1357,12 @@
     var r = loadRounds().find(function (x) { return x.id === currentRoundId; });
     if (!r) return;
     var h = r.holes[r.current_index || 0];
-    var label = document.getElementById("tee-mark-label");
+    var label = document.getElementById("tee-mark-text");
     var sub = document.getElementById("tee-mark-sub");
     if (!label || !sub) return;
     if (h.tee_mark) {
       label.textContent = "⛳ Départ marqué";
+      setMarkCheck("tee-mark-check", true);
       if (h.pin) {
         // Longueur réelle du trou = distance départ -> drapeau (m)
         var lenM = Math.round(haversineMeters(h.tee_mark, h.pin));
@@ -1339,12 +1372,40 @@
       }
     } else {
       label.textContent = "Départ non marqué";
+      setMarkCheck("tee-mark-check", false);
       sub.textContent = "Marque ta position au départ pour mesurer la longueur réelle du trou.";
     }
   }
 
   function updateTotalsInline() {
-    // Rien à afficher pour l'instant en dehors du header ; réservé si besoin futur.
+    updateScoreOverview();
+  }
+
+  // Aperçu permanent du score : cumul relatif au par sur les trous DÉJÀ joués (score saisi),
+  // en excluant le trou courant tant qu'il n'est pas validé. Ex. après bogey-bogey-par, au
+  // départ du 4e trou : "+2".
+  function updateScoreOverview() {
+    var r = getRound(currentRoundId);
+    var valEl = document.getElementById("so-value");
+    var subEl = document.getElementById("so-sub");
+    if (!r || !valEl) return;
+    var idx = r.current_index || 0;
+    var toPar = 0, played = 0;
+    r.holes.forEach(function (h, i) {
+      // On compte un trou comme "joué" s'il a été touché ET qu'un score y est saisi,
+      // en excluant le trou courant (on affiche le score AVANT de jouer ce trou).
+      if (i !== idx && h._touched && h.strokes != null) {
+        toPar += (h.strokes - h.par);
+        played += 1;
+      }
+    });
+    var txt = toPar === 0 ? "E" : (toPar > 0 ? "+" + toPar : "" + toPar);
+    valEl.textContent = txt;
+    valEl.className = "so-value " + (toPar > 0 ? "over" : (toPar < 0 ? "under" : "even"));
+    if (subEl) {
+      subEl.textContent = played === 0 ? "départ"
+        : (played + " trou" + (played > 1 ? "s" : "") + " joué" + (played > 1 ? "s" : ""));
+    }
   }
 
   function saveCurrentHole() {
@@ -1369,6 +1430,11 @@
       var dd = document.getElementById("h-drivedist").value;
       h.tee_shot_distance = dd !== "" ? parseFloat(dd) : null;
       h.tee_shot_club = document.getElementById("h-club").value || null;
+      // Si un tee shot a été auto-loggué (via "Marquer le départ"), garder son club
+      // synchronisé avec le club saisi en section Départ.
+      if (h.gps_shots && h.gps_shots.length && h.gps_shots[0]._auto_tee) {
+        h.gps_shots[0].club = h.tee_shot_club;
+      }
       h.tee_shot_shape = getOptRow("opt-teeshape") || null;
       h.pin_depth = getOptRow("opt-pindepth") || null;
       h.pin_side = getOptRow("opt-pinside") || null;
