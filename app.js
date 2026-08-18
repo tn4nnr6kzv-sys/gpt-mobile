@@ -69,7 +69,7 @@
   // incrémenter cette valeur ET le CACHE_NAME de sw.js à l'identique (ex. ici "v1.8.0" ->
   // cache "golftracker-mobile-1.8.0"). Changer le nom du cache est ce qui force la purge et
   // garantit que la nouvelle version s'installe proprement.
-  var APP_BUILD = "v1.19.0";
+  var APP_BUILD = "v1.20.0";
 
   var LS_COURSES = "gtm_courses_v1";
   var LS_ROUNDS = "gtm_rounds_v1";
@@ -1131,7 +1131,9 @@
         // saisi en section Départ, pour éviter une double saisie. Le flag _auto_tee
         // marque ce coup comme généré automatiquement (re-synchronisable sans doublon).
         h.gps_shots = h.gps_shots || [];
-        var teeShot = { lat: pos.lat, lng: pos.lng, acc: pos.acc, ts: pos.ts,
+        // Même structure qu'un coup normal (captureGPS renvoie {lat, lon, acc}),
+        // avec lie "tee" + le club de la section Départ, et un flag _auto_tee.
+        var teeShot = { lat: pos.lat, lon: pos.lon, acc: pos.acc,
                         lie: "tee", club: club, _auto_tee: true };
         if (h.gps_shots.length && h.gps_shots[0]._auto_tee) {
           // déjà un tee auto : on le remplace (nouvelle position / club)
@@ -1483,6 +1485,172 @@
     return h > 0 ? (h + " h " + (m < 10 ? "0" + m : m)) : (m + " min");
   }
 
+  // ============ SYNTHÈSE DE CARTE (bilan de fin de parcours) ============
+
+  // Distance parcourue (m) par chaque coup d'un trou, calculée depuis les positions GPS
+  // consécutives du log (tee -> coup2 -> coup3...). Le "green_mark" sert de point d'arrivée
+  // pour le dernier coup s'il est présent. Renvoie [{club, lie, meters}, ...].
+  function holeShotDistances(h) {
+    var pts = (h.gps_shots || []).filter(function (s) {
+      return s && s.lat != null && s.lon != null;
+    });
+    if (pts.length < 1) return [];
+    var out = [];
+    for (var i = 0; i < pts.length; i++) {
+      var from = pts[i];
+      var to = (i + 1 < pts.length) ? pts[i + 1]
+             : (h.green_mark && h.green_mark.lat != null ? h.green_mark : null);
+      if (!to) break; // dernier coup sans point d'arrivée : distance inconnue
+      out.push({ club: from.club || null, lie: from.lie || null,
+                 meters: Math.round(haversineMeters(from, to)) });
+    }
+    return out;
+  }
+
+  // Score "meilleur trou" : compte les conditions positives. Score net (par ou mieux) = 2 pts
+  // (compte double), les autres critères 1 pt chacun. Renvoie {points, applicable, detail}.
+  function holeQualityScore(h) {
+    var pts = 0;
+    var detail = [];
+    var strokes = h.strokes, par = h.par;
+
+    // Score net (compte double, gradué) : plus le score est bas, plus il rapporte.
+    // par ou mieux → 2 × (par - strokes + 1) : par=2, birdie=4, eagle=6…
+    // au-dessus du par → 0. Le score reste le critère dominant.
+    if (strokes != null && par != null) {
+      if (strokes <= par) {
+        pts += 2 * (par - strokes + 1);
+        var d = par - strokes;
+        detail.push(d >= 2 ? "eagle ou mieux" : (d === 1 ? "birdie" : "par"));
+      }
+    }
+    // FIR (fairway touché) — seulement par 4/5
+    if (par >= 4 && h.fairway === "hit") { pts += 1; detail.push("fairway"); }
+    // GIR
+    if (h.gir === 1 || h.gir === true) { pts += 1; detail.push("GIR"); }
+    // Putts ≤ 2
+    if (h.putts != null && h.putts <= 2) { pts += 1; detail.push("≤2 putts"); }
+    // Sand save réussi (si bunker tenté)
+    if (h.sand_attempt && h.sand_success) { pts += 1; detail.push("sand save"); }
+    // Up & down réussi (si tenté)
+    if (h.up_down_attempt && h.up_down_success) { pts += 1; detail.push("up & down"); }
+    // Aucune pénalité
+    if (!h.penalties || h.penalties === 0) { pts += 1; detail.push("0 pénalité"); }
+
+    return { points: pts, detail: detail };
+  }
+
+  // Construit la synthèse complète d'un round.
+  function buildRoundSynthesis(r) {
+    var holes = (r.holes || []).filter(function (h) { return h._touched && h.strokes != null; });
+    if (!holes.length) return null;
+
+    var parTotal = 0, strokesTotal = 0;
+    holes.forEach(function (h) { parTotal += (h.par || 0); strokesTotal += (h.strokes || 0); });
+
+    // Coup le plus long (tous types) et drive le plus long (tee shot uniquement)
+    var longestShot = null;   // {meters, club, hole}
+    var longestDrive = null;  // {meters, club, hole}
+    holes.forEach(function (h) {
+      // Drive : distance du tee shot. Priorité au calcul GPS, sinon tee_shot_distance saisi.
+      var dists = holeShotDistances(h);
+      var teeDist = null, teeClub = null;
+      if (dists.length && (dists[0].lie === "tee" || h.gps_shots && h.gps_shots[0] && h.gps_shots[0]._auto_tee)) {
+        teeDist = dists[0].meters; teeClub = dists[0].club;
+      } else if (h.tee_shot_distance != null) {
+        teeDist = Math.round(h.tee_shot_distance); teeClub = h.tee_shot_club || null;
+      }
+      if (teeDist != null && (!longestDrive || teeDist > longestDrive.meters)) {
+        longestDrive = { meters: teeDist, club: teeClub, hole: h.hole_number };
+      }
+      // Coup le plus long tous types
+      dists.forEach(function (d) {
+        if (!longestShot || d.meters > longestShot.meters) {
+          longestShot = { meters: d.meters, club: d.club, lie: d.lie, hole: h.hole_number };
+        }
+      });
+    });
+
+    // Meilleur trou statistique
+    var best = null; // {hole, points, si, detail}
+    holes.forEach(function (h) {
+      var q = holeQualityScore(h);
+      var si = (h.stroke_index != null) ? h.stroke_index : 99;
+      if (!best || q.points > best.points ||
+          (q.points === best.points && si < best.si)) {
+        best = { hole: h.hole_number, points: q.points, si: si,
+                 detail: q.detail, par: h.par, strokes: h.strokes };
+      }
+    });
+
+    return {
+      parTotal: parTotal,
+      strokesTotal: strokesTotal,
+      toPar: strokesTotal - parTotal,
+      holesPlayed: holes.length,
+      holes: holes.map(function (h) {
+        return { n: h.hole_number, par: h.par, strokes: h.strokes,
+                 toPar: h.strokes - h.par };
+      }),
+      longestShot: longestShot,
+      longestDrive: longestDrive,
+      bestHole: best,
+    };
+  }
+
+  // Rendu HTML de la synthèse dans #round-synthesis
+  function renderRoundSynthesis(r) {
+    var box = document.getElementById("round-synthesis");
+    if (!box) return;
+    var s = buildRoundSynthesis(r);
+    if (!s) { box.style.display = "none"; return; }
+    box.style.display = "";
+
+    var toParTxt = s.toPar === 0 ? "E" : (s.toPar > 0 ? "+" + s.toPar : "" + s.toPar);
+    var toParCls = s.toPar > 0 ? "over" : (s.toPar < 0 ? "under" : "even");
+
+    // Mini-scorecard : une pastille par trou (score, colorée selon vs par)
+    var cardCells = s.holes.map(function (h) {
+      var cls = h.toPar < 0 ? "birdie" : (h.toPar === 0 ? "par" : (h.toPar === 1 ? "bogey" : "dbogey"));
+      return '<div class="syn-cell ' + cls + '"><span class="syn-cell-n">' + h.n +
+             '</span><span class="syn-cell-s">' + h.strokes + '</span></div>';
+    }).join("");
+
+    var html = '';
+    html += '<div class="syn-head">';
+    html += '<div class="syn-score"><span class="syn-score-val ' + toParCls + '">' + toParTxt + '</span>';
+    html += '<span class="syn-score-sub">' + s.strokesTotal + ' coups · par ' + s.parTotal +
+            ' · ' + s.holesPlayed + ' trous</span></div>';
+    html += '</div>';
+
+    html += '<div class="syn-scorecard">' + cardCells + '</div>';
+
+    html += '<div class="syn-highlights">';
+    if (s.bestHole) {
+      var bh = s.bestHole;
+      var det = bh.detail && bh.detail.length ? bh.detail.join(", ") : "—";
+      html += '<div class="syn-hl"><span class="syn-hl-ico">⭐</span><div>' +
+              '<div class="syn-hl-t">Meilleur trou : n°' + bh.hole + '</div>' +
+              '<div class="syn-hl-s">' + det + '</div></div></div>';
+    }
+    if (s.longestDrive) {
+      var ld = s.longestDrive;
+      html += '<div class="syn-hl"><span class="syn-hl-ico">🚀</span><div>' +
+              '<div class="syn-hl-t">Plus long drive : ' + ld.meters + ' m</div>' +
+              '<div class="syn-hl-s">trou ' + ld.hole + (ld.club ? ' · ' + ld.club : '') + '</div></div></div>';
+    }
+    if (s.longestShot && (!s.longestDrive || s.longestShot.meters !== s.longestDrive.meters ||
+                          s.longestShot.hole !== s.longestDrive.hole)) {
+      var ls = s.longestShot;
+      html += '<div class="syn-hl"><span class="syn-hl-ico">📏</span><div>' +
+              '<div class="syn-hl-t">Plus long coup : ' + ls.meters + ' m</div>' +
+              '<div class="syn-hl-s">trou ' + ls.hole + (ls.club ? ' · ' + ls.club : '') + '</div></div></div>';
+    }
+    html += '</div>';
+
+    box.innerHTML = html;
+  }
+
   function openFinishScreen() {
     var r = getRound(currentRoundId);
     if (!r) return;
@@ -1496,6 +1664,8 @@
     document.getElementById("ft-dur").textContent = _fmtDuration(r.started_at, r.finished_at);
     document.getElementById("v-balls").textContent = r.balls_lost != null ? r.balls_lost : 0;
     document.getElementById("finish-notes").value = r.end_notes || "";
+
+    renderRoundSynthesis(r);
 
     // Construire la liste des critères de sensations
     var feelings = r.feelings || {};

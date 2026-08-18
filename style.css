@@ -494,3 +494,58 @@ details.collapse[open] summary::before { content: "▾ "; }
 }
 .mark-check:empty { display: none; }
 .mark-check .check-svg { display: block; }
+
+/* ============ Synthèse de carte (bilan de fin) ============ */
+#round-synthesis { display: none; }
+.syn-head { margin-bottom: 12px; }
+.syn-score { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.syn-score-val {
+  font-family: var(--mono);
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1;
+}
+.syn-score-val.over  { color: var(--flag); }
+.syn-score-val.under { color: var(--green-deep); }
+.syn-score-val.even  { color: var(--ink); }
+.syn-score-sub { font-size: 13px; color: var(--ink-soft); }
+
+/* Mini-scorecard : pastilles par trou */
+.syn-scorecard {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 4px;
+  margin: 12px 0 16px;
+}
+.syn-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 0;
+  border-radius: 6px;
+  background: var(--surface-2, #eef2ee);
+  border: 1px solid var(--line);
+}
+.syn-cell-n { font-size: 10px; color: var(--ink-soft); line-height: 1.2; }
+.syn-cell-s { font-family: var(--mono); font-size: 15px; font-weight: 700; line-height: 1.2; }
+.syn-cell.birdie { background: #d9f0e2; border-color: #a9e5c4; }
+.syn-cell.birdie .syn-cell-s { color: #1c7a45; }
+.syn-cell.par    { background: var(--surface-2, #eef2ee); }
+.syn-cell.bogey  { background: #fbeee0; border-color: #efc9a0; }
+.syn-cell.bogey  .syn-cell-s { color: #b5702a; }
+.syn-cell.dbogey { background: #f7dedb; border-color: #e6b0aa; }
+.syn-cell.dbogey .syn-cell-s { color: var(--flag); }
+
+/* Faits marquants */
+.syn-highlights { display: flex; flex-direction: column; gap: 8px; }
+.syn-hl {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--surface-2, #eef2ee);
+}
+.syn-hl-ico { font-size: 20px; line-height: 1; }
+.syn-hl-t { font-weight: 600; font-size: 14px; }
+.syn-hl-s { font-size: 12px; color: var(--ink-soft); }
