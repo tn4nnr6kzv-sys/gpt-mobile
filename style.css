@@ -549,3 +549,20 @@ details.collapse[open] summary::before { content: "▾ "; }
 .syn-hl-ico { font-size: 20px; line-height: 1; }
 .syn-hl-t { font-weight: 600; font-size: 14px; }
 .syn-hl-s { font-size: 12px; color: var(--ink-soft); }
+
+/* Compteurs de scores dans la synthèse */
+.syn-counts { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 16px; }
+.syn-chip {
+  font-size: 12.5px; padding: 3px 9px; border-radius: 999px;
+  background: var(--surface-2, #eef2ee); border: 1px solid var(--line);
+  color: var(--ink-soft);
+}
+.syn-chip b { font-family: var(--mono); font-size: 13px; color: var(--ink); }
+.syn-chip.eagle  { background: #d9f0e2; border-color: #7fd6a8; }
+.syn-chip.eagle b { color: #14683a; }
+.syn-chip.birdie { background: #d9f0e2; border-color: #a9e5c4; }
+.syn-chip.birdie b { color: #1c7a45; }
+.syn-chip.bogey  { background: #fbeee0; border-color: #efc9a0; }
+.syn-chip.bogey b { color: #b5702a; }
+.syn-chip.dbogey { background: #f7dedb; border-color: #e6b0aa; }
+.syn-chip.dbogey b { color: var(--flag); }

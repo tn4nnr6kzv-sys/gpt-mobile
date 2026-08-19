@@ -69,7 +69,7 @@
   // incrémenter cette valeur ET le CACHE_NAME de sw.js à l'identique (ex. ici "v1.8.0" ->
   // cache "golftracker-mobile-1.8.0"). Changer le nom du cache est ce qui force la purge et
   // garantit que la nouvelle version s'installe proprement.
-  var APP_BUILD = "v1.20.0";
+  var APP_BUILD = "v1.21.0";
 
   var LS_COURSES = "gtm_courses_v1";
   var LS_ROUNDS = "gtm_rounds_v1";
@@ -1548,6 +1548,17 @@
     var parTotal = 0, strokesTotal = 0;
     holes.forEach(function (h) { parTotal += (h.par || 0); strokesTotal += (h.strokes || 0); });
 
+    // Compteurs de scores (eagle ou mieux / birdies / pars / bogeys / double ou pire)
+    var counts = { eagle: 0, birdie: 0, par: 0, bogey: 0, dbogey: 0 };
+    holes.forEach(function (h) {
+      var d = h.strokes - h.par;
+      if (d <= -2) counts.eagle++;
+      else if (d === -1) counts.birdie++;
+      else if (d === 0) counts.par++;
+      else if (d === 1) counts.bogey++;
+      else counts.dbogey++;
+    });
+
     // Coup le plus long (tous types) et drive le plus long (tee shot uniquement)
     var longestShot = null;   // {meters, club, hole}
     var longestDrive = null;  // {meters, club, hole}
@@ -1588,6 +1599,7 @@
       strokesTotal: strokesTotal,
       toPar: strokesTotal - parTotal,
       holesPlayed: holes.length,
+      counts: counts,
       holes: holes.map(function (h) {
         return { n: h.hole_number, par: h.par, strokes: h.strokes,
                  toPar: h.strokes - h.par };
@@ -1604,7 +1616,9 @@
     if (!box) return;
     var s = buildRoundSynthesis(r);
     if (!s) { box.style.display = "none"; return; }
-    box.style.display = "";
+    // "block" explicite : le CSS masque #round-synthesis par défaut, et un style inline
+    // vide ("") laisserait cette règle s'appliquer — la synthèse se rendrait invisible.
+    box.style.display = "block";
 
     var toParTxt = s.toPar === 0 ? "E" : (s.toPar > 0 ? "+" + s.toPar : "" + s.toPar);
     var toParCls = s.toPar > 0 ? "over" : (s.toPar < 0 ? "under" : "even");
@@ -1624,6 +1638,22 @@
     html += '</div>';
 
     html += '<div class="syn-scorecard">' + cardCells + '</div>';
+
+    // Compteurs de scores (chips) — n'affiche que les catégories présentes, birdies toujours
+    var chipDefs = [
+      ["eagle", "Eagle+"], ["birdie", "Birdie" + (s.counts.birdie > 1 ? "s" : "")],
+      ["par", "Par" + (s.counts.par > 1 ? "s" : "")],
+      ["bogey", "Bogey" + (s.counts.bogey > 1 ? "s" : "")],
+      ["dbogey", "Double+"],
+    ];
+    var chips = "";
+    chipDefs.forEach(function (cd) {
+      var n = s.counts[cd[0]];
+      if (n > 0 || cd[0] === "birdie") {
+        chips += '<span class="syn-chip ' + cd[0] + '"><b>' + n + '</b> ' + cd[1] + '</span>';
+      }
+    });
+    html += '<div class="syn-counts">' + chips + '</div>';
 
     html += '<div class="syn-highlights">';
     if (s.bestHole) {
